@@ -354,15 +354,15 @@
 </head>
 <body>
   <h1>guest.lol</h1>
-  <p class="subtitle">Gorilla Tag Face Lipsync</p>
+  <p class="subtitle">guestvrgt</p>
   
   <div class="layout">
     <div class="panel preview-panel">
       <div id="stage"><canvas id="faceCanvas" width="256" height="256"></canvas></div>
       <div class="vis"><canvas id="visCanvas"></canvas></div>
       <div id="progressBar"><div id="progressFill"></div></div>
-      <p id="status">Pick a face & load audio!</p>
-      <p class="hint">Clean faces only • mouth stays below the eyes</p>
+      <p id="status">pick a face and load audio</p>
+      <p class="hint">guest is a tomboy</p>
     </div>
     
     <div class="panel controls-panel">
@@ -371,26 +371,26 @@
         <div class="face-grid" id="idleGrid"></div>
       </div>
       
-      <label class="file-btn" for="audioInput">📁 Choose Audio / Video</label>
+      <label class="file-btn" for="audioInput">Choose Audio/Video</label>
       <input type="file" id="audioInput" accept="audio/*,video/*,.mp4,.webm,.mov,.m4a,.ogg">
       
       <div class="convert-box">
         <div class="section-title">Paste direct file link</div>
         <input type="url" id="urlInput" class="url-input" placeholder="https://example.com/sound.mp3">
         <div class="convert-actions">
-          <button type="button" class="action" id="urlLoadBtn">✨ Load into lipsync</button>
+          <button type="button" class="action" id="urlLoadBtn">Load into lipsync</button>
         </div>
         <p class="url-hint" id="urlHint">Direct mp3/mp4 file links only. YouTube/TikTok page links cannot be fetched by a browser alone — upload the file instead.</p>
       </div>
       
       <div class="btn-row">
         <button class="action" id="playBtn" disabled>▶ Play</button>
-        <button class="action" id="stopBtn">⏹ Stop</button>
+        <button class="action" id="stopBtn">Stop</button>
       </div>
       
       <div class="export-row">
-        <button class="action" id="exportGifBtn" disabled>🖼 Export GIF</button>
-        <button class="action" id="exportVidBtn" disabled>🎬 Export Video</button>
+        <button class="action" id="exportGifBtn" disabled>Export GIF</button>
+        <button class="action" id="exportVidBtn" disabled>Export Video</button>
       </div>
       
       <div class="slider-group">
