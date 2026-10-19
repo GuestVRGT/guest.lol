@@ -2,92 +2,601 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#100d18"><title>guest.lol — Gorilla Tag Color Converter</title>
+<meta name="theme-color" content="#1a0a2e"><title>guest.lol — Gorilla Tag Color Converter</title>
 <style>
-:root{color-scheme:dark;--bg:#0d0b12;--panel:#17141f;--panel2:#201b2b;--line:#332b42;--text:#f5f1fc;--muted:#a79db8;--purple:#b68aff;--purple2:#8e5ee8;--radius:18px}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -20%,#302044 0%,#14101b 40%,var(--bg) 72%);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);padding:30px 18px 44px}
-.wrap{max-width:1000px;margin:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:30px}.brand{display:flex;align-items:center;gap:12px;font-weight:850;letter-spacing:-.04em;font-size:22px}.logo{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#d2b6ff,#8152d8);color:#160d25;font-weight:950;box-shadow:0 8px 28px #a16cff30}.tag{font-size:11px;letter-spacing:.13em;color:var(--muted);border:1px solid var(--line);padding:8px 11px;border-radius:999px;text-transform:uppercase}
-.hero{text-align:center;margin:26px 0 28px}.eyebrow{color:var(--purple);font-size:12px;letter-spacing:.18em;text-transform:uppercase;font-weight:800}.hero h1{font-size:clamp(29px,5vw,48px);letter-spacing:-.055em;margin:9px 0 10px;line-height:1.06}.hero p{margin:0 auto;color:var(--muted);max-width:550px;line-height:1.6;font-size:14px}
-.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(290px,.82fr);gap:18px}.panel{background:linear-gradient(160deg,#1c1826f5,#14111bf5);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:0 20px 55px #0003}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}.panel h2{font-size:16px;margin:0;letter-spacing:-.02em}.hint{font-size:12px;color:var(--muted)}
-.channels{display:grid;gap:17px}.channel{display:grid;grid-template-columns:28px 1fr 42px;align-items:center;gap:12px}.letter{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:900;color:#0e0c11}.letter.r{background:#ff747e}.letter.g{background:#76e2a1}.letter.b{background:#7db6ff}.channel label{display:block;font-size:13px;font-weight:750;margin-bottom:9px}.value{height:34px;border:1px solid var(--line);background:#100e16;border-radius:10px;display:grid;place-items:center;font-variant-numeric:tabular-nums;font-weight:800}.range{display:block;width:100%;height:6px;appearance:none;border-radius:99px;outline:none;cursor:pointer;background:#393244}.range::-webkit-slider-thumb{appearance:none;width:17px;height:17px;border-radius:50%;background:#fff;border:4px solid var(--purple);box-shadow:0 0 0 3px #b68aff20}.range::-moz-range-thumb{width:11px;height:11px;border-radius:50%;background:#fff;border:4px solid var(--purple)}
-.code-row{display:flex;gap:8px;align-items:center}.digits{display:flex;gap:8px;flex:1}.digit{width:100%;min-width:0;text-align:center;font-size:22px;font-weight:850;letter-spacing:.05em;padding:12px 4px;border:1px solid var(--line);border-radius:12px;background:#100e16;color:var(--text);outline:none}.digit:focus,.text-input:focus{border-color:var(--purple);box-shadow:0 0 0 3px #b68aff18}.btn{border:1px solid var(--line);border-radius:12px;padding:11px 14px;background:var(--panel2);color:var(--text);font-weight:750;font-size:12px;cursor:pointer;transition:transform .12s,border-color .12s,background .12s;white-space:nowrap}.btn:hover{border-color:#8c6ab6;background:#2a2137}.btn:active{transform:scale(.98)}.btn.primary{background:linear-gradient(135deg,#c6a5ff,#9566ed);border:0;color:#1b1028}.btn.primary:hover{background:linear-gradient(135deg,#d5bdff,#a47bfa)}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}.divider{height:1px;background:var(--line);margin:22px 0}.preview{height:190px;border-radius:15px;border:1px solid #ffffff20;position:relative;overflow:hidden;background:#000;transition:background .12s}.preview:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,#ffffff28,transparent 55%,#0000001a)}.preview-label{position:absolute;left:14px;bottom:12px;background:#0008;padding:7px 10px;border-radius:9px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;backdrop-filter:blur(8px)}.big-code{font-size:44px;font-weight:900;letter-spacing:.12em;line-height:1;margin:19px 0 5px;text-align:center}.sub-code{text-align:center;color:var(--muted);font-size:12px}.outputs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:19px}.output{background:#100e16;border:1px solid var(--line);border-radius:12px;padding:12px}.output .label{color:var(--muted);font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}.out-row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;font-weight:800}.copy{border:0;background:transparent;color:var(--purple);font-size:11px;font-weight:800;cursor:pointer;padding:3px}.hex-tools{display:grid;grid-template-columns:48px 1fr;gap:9px;margin-top:10px}.picker{width:48px;height:42px;padding:3px;border:1px solid var(--line);border-radius:10px;background:#100e16;cursor:pointer}.text-input{width:100%;min-width:0;border:1px solid var(--line);border-radius:10px;background:#100e16;color:var(--text);padding:11px 12px;font:inherit;font-size:13px;outline:none;text-transform:uppercase}.presets{display:flex;gap:8px;flex-wrap:wrap}.preset{border:1px solid var(--line);border-radius:999px;padding:7px 10px;background:#100e16;color:#d9d0e7;font-size:11px;cursor:pointer}.preset:hover{border-color:var(--purple)}.foot{text-align:center;color:#81778f;font-size:11px;margin-top:24px;line-height:1.6}.toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:#e8ddff;color:#20152d;padding:10px 14px;border-radius:12px;font-size:12px;font-weight:800;transition:.2s;box-shadow:0 8px 30px #0004}.toast.show{opacity:1;transform:translate(-50%,0)}
-@media(max-width:760px){body{padding:18px 12px 30px}.top{margin-bottom:22px}.layout{grid-template-columns:1fr}.panel{padding:18px}.hero{margin:18px 0 23px}.preview{height:160px}.tag{display:none}}
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;800&display=swap');
+  :root {
+    --bg1: #1a0a2e;
+    --bg2: #2d1b4e;
+    --bg3: #0d0618;
+    --glass: rgba(255, 255, 255, 0.06);
+    --glass-border: rgba(255, 255, 255, 0.14);
+    --glass-highlight: rgba(255, 255, 255, 0.2);
+    --purple: #c084fc;
+    --purple-bright: #e9d5ff;
+    --purple-deep: #7c3aed;
+    --pink: #f0abfc;
+    --text: #f5eefc;
+    --muted: #b8a0d4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', system-ui, sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 40px;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(124, 58, 237, 0.35) 0%, transparent 50%),
+      radial-gradient(ellipse 70% 50% at 85% 80%, rgba(192, 132, 252, 0.2) 0%, transparent 45%),
+      radial-gradient(ellipse 50% 40% at 50% 50%, rgba(45, 27, 78, 0.5) 0%, transparent 70%),
+      linear-gradient(165deg, var(--bg1) 0%, var(--bg3) 40%, #12081f 100%);
+    background-attachment: fixed;
+  }
 
-.site-nav{width:100%;max-width:1000px;display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 auto 24px;padding:10px;background:#17141f;border:1px solid #332b42;border-radius:16px;box-shadow:0 12px 35px #0003}
-.site-nav .nav-brand{font-size:18px;font-weight:900;letter-spacing:-.04em;padding:0 10px;color:#f5f1fc;text-decoration:none}
-.site-nav .nav-links{display:flex;gap:7px;flex-wrap:wrap}
-.site-nav a.nav-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:#a79db8;background:#100e16;border:1px solid #332b42;border-radius:11px;padding:10px 13px;font-size:12px;font-weight:800;transition:.15s}
-.site-nav a.nav-link:hover{color:#f5f1fc;border-color:#8c6ab6}
-.site-nav a.nav-link.active{color:#1b1028;background:linear-gradient(135deg,#c6a5ff,#9566ed);border-color:transparent}
-@media(max-width:520px){.site-nav{align-items:stretch;flex-direction:column}.site-nav .nav-links{display:grid;grid-template-columns:1fr 1fr}.site-nav a.nav-link{padding:10px 7px}}
+  .site-nav {
+    width: min(980px, 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 20px;
+  }
+  .site-nav a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 10px 17px;
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 13px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 800;
+    background: rgba(255,255,255,0.06);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    transition: transform .15s, background .15s, box-shadow .15s;
+  }
+  .site-nav a:hover {
+    transform: translateY(-2px);
+    background: rgba(192,132,252,0.15);
+    box-shadow: 0 5px 18px rgba(124,58,237,0.18);
+  }
+  .site-nav a.active {
+    color: #1a0a2e;
+    border-color: rgba(255,255,255,0.2);
+    background: linear-gradient(135deg, var(--purple-bright), var(--purple), var(--pink));
+  }
 
+  h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(0.95rem, 3.2vw, 1.55rem);
+    background: linear-gradient(135deg, var(--purple-bright), var(--purple), var(--pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 20px rgba(192, 132, 252, 0.5));
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 22px;
+    opacity: 0.85;
+    text-align: center;
+  }
 
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Urbanist:wght@400;500;600;700;800;900&display=swap');
-:root{color-scheme:dark;--bg:#111214;--panel:#191a1d;--panel2:#222327;--line:#34353a;--text:#f0f0ed;--muted:#a4a5a9;--purple:#b5a0df;--purple2:#9782c5;--radius:14px}
-body{background:#111214;font-family:'Urbanist',sans-serif;padding:24px clamp(16px,4vw,54px) 48px;color:var(--text)}
-.wrap{max-width:1240px;margin:0 auto}
-.top{display:none}
-.site-nav{max-width:none;margin:0 0 56px;padding:10px 0;background:transparent;border:0;border-bottom:1px solid #34353a;border-radius:0;box-shadow:none}
-.site-nav .nav-brand{font-family:'Urbanist',sans-serif;font-size:21px;font-weight:900;letter-spacing:-.07em;padding:8px 0}
-.site-nav .nav-links{gap:4px}
-.site-nav a.nav-link{background:transparent;border:1px solid transparent;border-radius:8px;color:#a4a5a9;padding:11px 15px;font-family:'Urbanist',sans-serif;font-size:12px;font-weight:700}
-.site-nav a.nav-link:hover{border-color:#44454a;color:#f0f0ed;background:#1a1b1e}
-.site-nav a.nav-link.active{color:#e7dcff;background:#2a2632;border-color:#4c435e}
-.hero{text-align:left;margin:0 0 36px;max-width:760px}
-.eyebrow{font-size:11px;letter-spacing:.17em;color:#b5a0df;font-weight:800}
-.hero h1{font-family:'Instrument Serif',serif;font-size:clamp(42px,6.5vw,76px);font-weight:400;letter-spacing:-.035em;line-height:.98;margin:13px 0 15px;color:#f0f0ed;background:none;-webkit-text-fill-color:currentColor;filter:none}
-.hero p{margin:0;color:#a4a5a9;max-width:540px;line-height:1.7;font-size:15px}
-.layout{grid-template-columns:minmax(0,1.12fr) minmax(300px,.88fr);gap:16px;align-items:start}
-.panel{background:#191a1d;border:1px solid #34353a;border-radius:14px;padding:clamp(18px,2.4vw,28px);box-shadow:none}
-.panel h2{font-family:'Urbanist',sans-serif;font-size:15px;font-weight:800;letter-spacing:-.015em}
-.letter{border-radius:6px;color:#151619}
-.btn,.preset,.text-input,.digit,.picker,.output,.value{border-radius:8px}
-.btn{background:#222327;border-color:#414247;font-family:'Urbanist',sans-serif;font-weight:800}
-.btn:hover{border-color:#83759e;background:#29282e}
-.btn.primary{background:#b5a0df;color:#1b1920;border:1px solid #b5a0df}
-.btn.primary:hover{background:#c7b6ea}
-.range{background:#414247}
-.range::-webkit-slider-thumb{border-color:#b5a0df;box-shadow:none}
-.range::-moz-range-thumb{border-color:#b5a0df}
-.digit,.text-input,.picker,.value,.output{background:#131416;border-color:#34353a}
-.digit:focus,.text-input:focus{border-color:#b5a0df;box-shadow:0 0 0 2px #b5a0df20}
-.preview{border-color:#414247;border-radius:10px}
-.preview:before{display:none}
-.preset{background:#141517;border-color:#34353a;color:#d1d0d5}
-.preset:hover{border-color:#b5a0df}
-.copy{color:#c5b4e8}
-.divider{background:#34353a}
-.foot{margin-top:32px;text-align:left;color:#818287}
-.toast{background:#e6def5;color:#201b29;border-radius:8px;box-shadow:none}
-@media(max-width:760px){body{padding:18px 14px 32px}.site-nav{margin-bottom:36px}.hero{margin-bottom:28px}.hero h1{font-size:clamp(42px,12vw,62px)}.layout{grid-template-columns:1fr}.panel{padding:18px}}
-@media(max-width:520px){.site-nav{gap:10px}.site-nav .nav-links{display:grid;grid-template-columns:1fr 1fr}.site-nav a.nav-link{padding:10px 8px}.hero p{font-size:14px}}
+  .wrap {
+    max-width: 980px;
+    width: 100%;
+  }
 
-</style></head>
-<body><main class="wrap">
-<nav class="site-nav" aria-label="guest.lol tools"><a class="nav-brand" href="index.html">guest.lol</a><div class="nav-links"><a class="nav-link active" href="index.html" aria-current="page">Color Converter</a><a class="nav-link" href="face-lipsync.html">Face Lipsync</a></div></nav>
-<header class="top"><div class="brand"><div class="logo">g.</div><span>guest.lol</span></div><div class="tag">Gorilla Tag tools</div></header>
-<section class="hero"><div class="eyebrow">Color studio</div><h1>Gorilla Tag Color Converter</h1><p>Build your three-digit color code, preview your shade, and convert it to RGB or HEX instantly.</p></section>
-<div class="layout">
-<section class="panel"><div class="panel-head"><h2>Adjust your color</h2><span class="hint">Each value: 0–9</span></div>
-<div class="channels">
-<div class="channel"><span class="letter r">R</span><div><label for="red">Red</label><input id="red" class="range" type="range" min="0" max="9" step="1" value="0" aria-label="Red value"></div><output id="redValue" class="value">0</output></div>
-<div class="channel"><span class="letter g">G</span><div><label for="green">Green</label><input id="green" class="range" type="range" min="0" max="9" step="1" value="0" aria-label="Green value"></div><output id="greenValue" class="value">0</output></div>
-<div class="channel"><span class="letter b">B</span><div><label for="blue">Blue</label><input id="blue" class="range" type="range" min="0" max="9" step="1" value="0" aria-label="Blue value"></div><output id="blueValue" class="value">0</output></div>
-</div>
-<div class="divider"></div><div class="panel-head"><h2>Color code</h2><span class="hint">Enter three digits</span></div>
-<div class="code-row"><div class="digits"><input class="digit" id="digitR" maxlength="1" inputmode="numeric" aria-label="Red code digit" value="0"><input class="digit" id="digitG" maxlength="1" inputmode="numeric" aria-label="Green code digit" value="0"><input class="digit" id="digitB" maxlength="1" inputmode="numeric" aria-label="Blue code digit" value="0"></div><button class="btn" id="random">Random</button></div>
-<div class="actions"><button class="btn primary" id="copyCode">Copy color code</button><button class="btn" id="reset">Reset</button></div>
-<div class="divider"></div><div class="panel-head"><h2>Quick colors</h2><span class="hint">Tap to try one</span></div>
-<div class="presets"><button class="preset" data-code="900">Red · 900</button><button class="preset" data-code="090">Green · 090</button><button class="preset" data-code="009">Blue · 009</button><button class="preset" data-code="909">Pink · 909</button><button class="preset" data-code="990">Yellow · 990</button><button class="preset" data-code="099">Cyan · 099</button><button class="preset" data-code="999">White · 999</button><button class="preset" data-code="000">Black · 000</button></div>
-</section>
-<aside class="panel"><div class="panel-head"><h2>Live preview</h2><span class="hint" id="previewStatus">#000000</span></div>
-<div id="preview" class="preview"><span class="preview-label">Your color</span></div><div class="big-code" id="bigCode">000</div><div class="sub-code">Gorilla Tag color code</div>
-<div class="outputs"><div class="output"><div class="label">HEX</div><div class="out-row"><span id="hexOut">#000000</span><button class="copy" data-copy="hexOut">COPY</button></div></div><div class="output"><div class="label">RGB</div><div class="out-row"><span id="rgbOut">0, 0, 0</span><button class="copy" data-copy="rgbOut">COPY</button></div></div></div>
-<div class="divider"></div><div class="panel-head"><h2>Convert HEX to code</h2></div><div class="hint">Pick a color or enter a HEX value to find the closest 0–9 code.</div>
-<div class="hex-tools"><input id="colorPicker" class="picker" type="color" value="#000000" aria-label="Choose a color"><input id="hexInput" class="text-input" value="#000000" maxlength="7" spellcheck="false" aria-label="HEX color value"></div>
-<div class="actions"><button id="applyHex" class="btn primary">Convert to code</button><button id="copyHex" class="btn">Copy HEX</button></div>
-</aside></div>
-<footer class="foot">Made for color experimenting. Values are converted from the 0–9 channel scale to 8-bit RGB for display.<br>guest.lol · Color Converter</footer></main><div class="toast" id="toast" role="status" aria-live="polite">Copied</div>
+  .layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 22px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .panel {
+    background: linear-gradient(145deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.03) 100%);
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 18px;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 var(--glass-highlight),
+      inset 0 -1px 0 rgba(0,0,0,0.15),
+      0 0 0 1px rgba(124, 58, 237, 0.08);
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+    min-width: 280px;
+  }
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 40%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, transparent 100%);
+    pointer-events: none;
+    border-radius: 24px 24px 0 0;
+  }
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .panel h2 {
+    font-size: 0.95rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+    opacity: 0.8;
+  }
+
+  .channels { display: grid; gap: 16px; position: relative; }
+  .channel {
+    display: grid;
+    grid-template-columns: 28px 1fr 42px;
+    align-items: center;
+    gap: 12px;
+  }
+  .letter {
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 900;
+    color: #1a0a2e;
+  }
+  .letter.r { background: linear-gradient(135deg, #ff8a95, #ff5c6a); }
+  .letter.g { background: linear-gradient(135deg, #7eecb0, #4ad98a); }
+  .letter.b { background: linear-gradient(135deg, #8bc4ff, #5a9dff); }
+  .channel label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--muted);
+  }
+  .value {
+    height: 34px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(0,0,0,0.3);
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    color: var(--purple-bright);
+  }
+  .range {
+    display: block;
+    width: 100%;
+    height: 6px;
+    appearance: none;
+    border-radius: 99px;
+    outline: none;
+    cursor: pointer;
+    background: rgba(0,0,0,0.35);
+  }
+  .range::-webkit-slider-thumb {
+    appearance: none;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: #fff;
+    border: 4px solid var(--purple);
+    box-shadow: 0 0 12px rgba(192,132,252,0.45);
+  }
+  .range::-moz-range-thumb {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #fff;
+    border: 4px solid var(--purple);
+  }
+
+  .code-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    position: relative;
+  }
+  .digits { display: flex; gap: 8px; flex: 1; }
+  .digit {
+    width: 100%;
+    min-width: 0;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 850;
+    letter-spacing: .05em;
+    padding: 12px 4px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    background: rgba(0,0,0,0.3);
+    color: var(--text);
+    outline: none;
+    font-family: inherit;
+  }
+  .digit:focus, .text-input:focus {
+    border-color: var(--purple);
+    box-shadow: 0 0 14px rgba(192,132,252,0.3);
+  }
+
+  .btn {
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.08);
+    color: var(--text);
+    font-weight: 800;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s, filter .15s, background .15s;
+    white-space: nowrap;
+    font-family: inherit;
+    backdrop-filter: blur(8px);
+  }
+  .btn:hover {
+    transform: translateY(-1px);
+    background: rgba(255,255,255,0.12);
+  }
+  .btn:active { transform: scale(.98); }
+  .btn.primary {
+    background: linear-gradient(135deg, rgba(192,132,252,0.9), rgba(124,58,237,0.95));
+    border: 0;
+    color: #1a0a2e;
+    box-shadow: 0 4px 18px rgba(124,58,237,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .btn.primary:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 6px 24px rgba(124,58,237,0.45), inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+
+  .actions {
+    display: flex;
+    gap: 9px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    position: relative;
+  }
+  .divider {
+    height: 1px;
+    background: rgba(255,255,255,0.1);
+    margin: 18px 0;
+    position: relative;
+  }
+
+  .preview {
+    height: 180px;
+    border-radius: 18px;
+    border: 1px solid rgba(192,132,252,0.2);
+    position: relative;
+    overflow: hidden;
+    background: #000;
+    transition: background .12s;
+    box-shadow:
+      inset 0 0 40px rgba(0,0,0,0.5),
+      0 0 30px rgba(124,58,237,0.12);
+  }
+  .preview:before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #ffffff22, transparent 55%, #0000001a);
+  }
+  .preview-label {
+    position: absolute;
+    left: 14px;
+    bottom: 12px;
+    background: rgba(0,0,0,0.55);
+    padding: 7px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    backdrop-filter: blur(8px);
+  }
+  .big-code {
+    font-size: 42px;
+    font-weight: 900;
+    letter-spacing: .12em;
+    line-height: 1;
+    margin: 16px 0 4px;
+    text-align: center;
+    background: linear-gradient(135deg, var(--purple-bright), var(--purple), var(--pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+  }
+  .sub-code {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.78rem;
+    opacity: 0.8;
+    position: relative;
+  }
+
+  .outputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 16px;
+    position: relative;
+  }
+  .output {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 12px;
+  }
+  .output .label {
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .out-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .copy {
+    border: 0;
+    background: transparent;
+    color: var(--purple);
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+    padding: 3px;
+  }
+  .copy:hover { color: var(--pink); }
+
+  .hex-tools {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 9px;
+    margin-top: 10px;
+    position: relative;
+  }
+  .picker {
+    width: 48px;
+    height: 42px;
+    padding: 3px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    background: rgba(0,0,0,0.3);
+    cursor: pointer;
+  }
+  .text-input {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    background: rgba(0,0,0,0.3);
+    color: var(--text);
+    padding: 11px 12px;
+    font: inherit;
+    font-size: 13px;
+    outline: none;
+    text-transform: uppercase;
+  }
+
+  .presets {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    position: relative;
+  }
+  .preset {
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 999px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.25);
+    color: #d9d0e7;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color .15s, transform .12s, background .15s;
+  }
+  .preset:hover {
+    border-color: var(--purple);
+    background: rgba(192,132,252,0.12);
+    transform: translateY(-1px);
+  }
+
+  footer {
+    margin-top: 24px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    opacity: 0.55;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translate(-50%, 20px);
+    opacity: 0;
+    pointer-events: none;
+    background: linear-gradient(135deg, var(--purple-bright), var(--purple));
+    color: #1a0a2e;
+    padding: 10px 16px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 800;
+    transition: .2s;
+    box-shadow: 0 8px 30px rgba(124,58,237,0.35);
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  @media (max-width: 760px) {
+    body { padding: 16px 12px 30px; }
+    .layout { flex-direction: column; }
+    .panel { min-width: 0; }
+    .preview { height: 150px; }
+  }
+  @media (max-width: 480px) {
+    .site-nav { gap: 7px; }
+    .site-nav a { padding: 9px 12px; font-size: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+  <nav class="site-nav" aria-label="guest.lol tools">
+    <a class="active" href="index.html" aria-current="page">Color Converter</a>
+    <a href="face-lipsync.html">Face Lipsync</a>
+  </nav>
+
+  <h1>guest.lol</h1>
+  <p class="subtitle">Gorilla Tag Color Converter</p>
+
+  <main class="wrap">
+    <div class="layout">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Adjust your color</h2>
+          <span class="hint">Each value: 0–9</span>
+        </div>
+        <div class="channels">
+          <div class="channel">
+            <span class="letter r">R</span>
+            <div>
+              <label for="red">Red</label>
+              <input id="red" class="range" type="range" min="0" max="9" step="1" value="0" aria-label="Red value">
+            </div>
+            <output id="redValue" class="value">0</output>
+          </div>
+          <div class="channel">
+            <span class="letter g">G</span>
+            <div>
+              <label for="green">Green</label>
+              <input id="green" class="range" type="range" min="0" max="9" step="1" value="0" aria-label="Green value">
+            </div>
+            <output id="greenValue" class="value">0</output>
+          </div>
+          <div class="channel">
+            <span class="letter b">B</span>
+            <div>
+              <label for="blue">Blue</label>
+              <input id="blue" class="range" type="range" min="0" max="9" step="1" value="0" aria-label="Blue value">
+            </div>
+            <output id="blueValue" class="value">0</output>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="panel-head">
+          <h2>Color code</h2>
+          <span class="hint">Enter three digits</span>
+        </div>
+        <div class="code-row">
+          <div class="digits">
+            <input class="digit" id="digitR" maxlength="1" inputmode="numeric" aria-label="Red code digit" value="0">
+            <input class="digit" id="digitG" maxlength="1" inputmode="numeric" aria-label="Green code digit" value="0">
+            <input class="digit" id="digitB" maxlength="1" inputmode="numeric" aria-label="Blue code digit" value="0">
+          </div>
+          <button class="btn" id="random">Random</button>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="copyCode">Copy color code</button>
+          <button class="btn" id="reset">Reset</button>
+        </div>
+
+        <div class="divider"></div>
+        <div class="panel-head">
+          <h2>Quick colors</h2>
+          <span class="hint">Tap to try one</span>
+        </div>
+        <div class="presets">
+          <button class="preset" data-code="900">Red · 900</button>
+          <button class="preset" data-code="090">Green · 090</button>
+          <button class="preset" data-code="009">Blue · 009</button>
+          <button class="preset" data-code="909">Pink · 909</button>
+          <button class="preset" data-code="990">Yellow · 990</button>
+          <button class="preset" data-code="099">Cyan · 099</button>
+          <button class="preset" data-code="999">White · 999</button>
+          <button class="preset" data-code="000">Black · 000</button>
+        </div>
+      </section>
+
+      <aside class="panel" style="max-width: 380px;">
+        <div class="panel-head">
+          <h2>Live preview</h2>
+          <span class="hint" id="previewStatus">#000000</span>
+        </div>
+        <div id="preview" class="preview"><span class="preview-label">Your color</span></div>
+        <div class="big-code" id="bigCode">000</div>
+        <div class="sub-code">Gorilla Tag color code</div>
+
+        <div class="outputs">
+          <div class="output">
+            <div class="label">HEX</div>
+            <div class="out-row">
+              <span id="hexOut">#000000</span>
+              <button class="copy" data-copy="hexOut">COPY</button>
+            </div>
+          </div>
+          <div class="output">
+            <div class="label">RGB</div>
+            <div class="out-row">
+              <span id="rgbOut">0, 0, 0</span>
+              <button class="copy" data-copy="rgbOut">COPY</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="panel-head">
+          <h2>Convert HEX to code</h2>
+        </div>
+        <div class="hint" style="margin-bottom:10px;">Pick a color or enter a HEX value to find the closest 0–9 code.</div>
+        <div class="hex-tools">
+          <input id="colorPicker" class="picker" type="color" value="#000000" aria-label="Choose a color">
+          <input id="hexInput" class="text-input" value="#000000" maxlength="7" spellcheck="false" aria-label="HEX color value">
+        </div>
+        <div class="actions">
+          <button id="applyHex" class="btn primary">Convert to code</button>
+          <button id="copyHex" class="btn">Copy HEX</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer>Made for color experimenting · Values convert from 0–9 scale to 8-bit RGB<br>guest.lol · Color Converter</footer>
+  <div class="toast" id="toast" role="status" aria-live="polite">Copied</div>
+
 <script>
 const $=id=>document.getElementById(id);const channels=['red','green','blue'];let toastTimer;
 function code(){return channels.map(id=>$(id).value).join('')}
@@ -101,4 +610,6 @@ channels.forEach(id=>$(id).addEventListener('input',render));['digitR','digitG',
 $('random').addEventListener('click',()=>{channels.forEach(id=>$(id).value=Math.floor(Math.random()*10));render()});$('reset').addEventListener('click',()=>setCode('000'));$('copyCode').addEventListener('click',()=>copyText(code()));document.querySelectorAll('[data-code]').forEach(b=>b.addEventListener('click',()=>setCode(b.dataset.code)));document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click',()=>copyText($(b.dataset.copy).textContent)));
 function convertHex(){let raw=$('hexInput').value.trim();if(!/^#?[0-9a-fA-F]{6}$/.test(raw)){notify('Enter a valid 6-digit HEX');return}raw=raw.replace('#','');let rgb=[0,2,4].map(i=>parseInt(raw.slice(i,i+2),16));setCode(rgb.map(v=>Math.max(0,Math.min(9,Math.round(v/255*9)))).join(''));notify('Converted to '+code())}
 $('colorPicker').addEventListener('input',()=>{$('hexInput').value=$('colorPicker').value.toUpperCase()});$('applyHex').addEventListener('click',convertHex);$('hexInput').addEventListener('keydown',e=>{if(e.key==='Enter')convertHex()});$('copyHex').addEventListener('click',()=>copyText($('hexInput').value.toUpperCase()));render();
-</script></body></html>
+</script>
+</body>
+</html>
