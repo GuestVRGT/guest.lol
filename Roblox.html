@@ -1,2 +1,856 @@
 <!DOCTYPE html>
-<!-- see local index.html - uploading via truncated for size; full content follows in next if needed -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>guest.lol — Zip Faces Lipsync</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;800&display=swap');
+  :root {
+    --bg1: #ffffff;
+    --bg2: #f8f5ff;
+    --bg3: #f0ebfa;
+    --glass: rgba(124, 58, 237, 0.06);
+    --glass-border: rgba(124, 58, 237, 0.18);
+    --glass-highlight: rgba(255, 255, 255, 0.8);
+    --purple: #7c3aed;
+    --purple-bright: #a78bfa;
+    --purple-deep: #5b21b6;
+    --pink: #d946ef;
+    --text: #1e1b2e;
+    --muted: #6b5b8a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', system-ui, sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px;
+    background: #ffffff;
+  }
+  h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(1rem, 3.5vw, 1.7rem);
+    background: linear-gradient(135deg, var(--purple-deep), var(--purple), var(--pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 8px rgba(124, 58, 237, 0.25));
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 22px;
+    opacity: 0.9;
+  }
+  .layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 22px;
+    justify-content: center;
+    max-width: 980px;
+    width: 100%;
+  }
+  .panel {
+    background: #ffffff;
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 18px;
+    box-shadow: 0 8px 28px rgba(124, 58, 237, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+    position: relative;
+    overflow: hidden;
+  }
+  .panel::before { display: none; }
+  .preview-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    min-width: 280px;
+  }
+  #stage {
+    width: 280px;
+    height: 280px;
+    background: #f3f0fa;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    box-shadow: inset 0 0 20px rgba(124, 58, 237, 0.06), 0 4px 16px rgba(124, 58, 237, 0.1);
+  }
+  #faceCanvas {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  .controls-panel {
+    flex: 1;
+    min-width: 280px;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  label.file-btn, button.action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 18px;
+    border-radius: 14px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.12);
+    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+    font-family: inherit;
+  }
+  label.file-btn {
+    background: linear-gradient(135deg, #c084fc, #7c3aed);
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
+  }
+  label.file-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 22px rgba(124, 58, 237, 0.4);
+  }
+  input[type="file"] { display: none; }
+  .btn-row, .export-row { display: flex; gap: 10px; }
+  #playBtn {
+    background: linear-gradient(135deg, #f0abfc, #c084fc);
+    color: #1e1b2e;
+    flex: 1;
+    box-shadow: 0 4px 14px rgba(192, 132, 252, 0.3);
+  }
+  #playBtn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+  #playBtn:not(:disabled):hover { transform: translateY(-1px); filter: brightness(1.05); }
+  #stopBtn {
+    background: #f3f0fa;
+    color: var(--text);
+    flex: 1;
+    border: 1px solid rgba(124, 58, 237, 0.15);
+  }
+  #stopBtn:hover { background: #ebe6f7; }
+  #exportGifBtn {
+    background: linear-gradient(135deg, #fb923c, #ea580c);
+    color: white;
+    flex: 1;
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25);
+  }
+  #exportVidBtn {
+    background: linear-gradient(135deg, #60a5fa, #3b82f6);
+    color: white;
+    flex: 1;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+  }
+  #exportGifBtn:disabled, #exportVidBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+  #exportGifBtn:not(:disabled):hover, #exportVidBtn:not(:disabled):hover {
+    transform: translateY(-1px); filter: brightness(1.1);
+  }
+  .section-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    opacity: 0.8;
+  }
+  .face-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+    gap: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 8px;
+    background: #f8f5ff;
+    border-radius: 16px;
+    border: 1px solid rgba(124, 58, 237, 0.12);
+  }
+  .face-thumb {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    background: #ffffff;
+    image-rendering: pixelated;
+    object-fit: contain;
+    transition: border-color 0.15s, transform 0.12s, box-shadow 0.15s;
+  }
+  .face-thumb:hover { transform: scale(1.1); }
+  .face-thumb.active {
+    border-color: var(--purple);
+    box-shadow: 0 0 12px rgba(124, 58, 237, 0.35);
+  }
+  .slider-group label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 5px;
+    gap: 8px;
+  }
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--purple);
+    height: 6px;
+  }
+  .num-input {
+    width: 96px;
+    background: #f8f5ff;
+    border: 1px solid rgba(124, 58, 237, 0.25);
+    border-radius: 10px;
+    color: var(--purple-deep);
+    font-family: 'Nunito', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    text-align: right;
+  }
+  .num-input:focus {
+    outline: none;
+    border-color: var(--purple);
+    box-shadow: 0 0 8px rgba(124, 58, 237, 0.25);
+  }
+  #status {
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+    min-height: 1.2em;
+  }
+  .vis {
+    width: 100%;
+    height: 42px;
+    background: #f3f0fa;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(124, 58, 237, 0.12);
+  }
+  #visCanvas { width: 100%; height: 100%; display: block; }
+  footer {
+    margin-top: 24px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    opacity: 0.7;
+  }
+  .hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.4;
+    text-align: center;
+    opacity: 0.85;
+  }
+  .face-grid::-webkit-scrollbar { width: 6px; }
+  .face-grid::-webkit-scrollbar-thumb {
+    background: rgba(124, 58, 237, 0.3);
+    border-radius: 3px;
+  }
+  #progressBar {
+    width: 100%;
+    height: 6px;
+    background: #e8e2f5;
+    border-radius: 4px;
+    overflow: hidden;
+    display: none;
+  }
+  #progressFill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--purple-deep), var(--purple), var(--pink));
+    transition: width 0.1s;
+    border-radius: 4px;
+  }
+  .search-box {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    background: #f8f5ff;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+  }
+  .search-box:focus {
+    outline: none;
+    border-color: var(--purple);
+    box-shadow: 0 0 8px rgba(124, 58, 237, 0.2);
+  }
+  .search-box::placeholder { color: var(--muted); }
+</style>
+</head>
+<body>
+  <h1>guest.lol</h1>
+  <p class="subtitle">Zip Faces Lipsync · white theme · faces from zip</p>
+  
+  <div class="layout">
+    <div class="panel preview-panel">
+      <div id="stage"><canvas id="faceCanvas" width="256" height="256"></canvas></div>
+      <div class="vis"><canvas id="visCanvas"></canvas></div>
+      <div id="progressBar"><div id="progressFill"></div></div>
+      <p id="status">Loading faces...</p>
+      <p class="hint">Faces load from zip · mouth opens with audio (GT style)</p>
+    </div>
+    
+    <div class="panel controls-panel">
+      <div>
+        <div class="section-title">Face <span id="faceCount"></span></div>
+        <input type="text" class="search-box" id="faceSearch" placeholder="Search faces...">
+        <div class="face-grid" id="idleGrid" style="margin-top:8px;"></div>
+      </div>
+      
+      <label class="file-btn" for="audioInput">📁 Choose Audio / Video</label>
+      <input type="file" id="audioInput" accept="audio/*,video/*,.mp4,.webm,.mov,.m4a,.ogg">
+      
+      <div class="btn-row">
+        <button class="action" id="playBtn" disabled>▶ Play</button>
+        <button class="action" id="stopBtn">⏹ Stop</button>
+      </div>
+      
+      <div class="export-row">
+        <button class="action" id="exportGifBtn" disabled>🖼 Export GIF</button>
+        <button class="action" id="exportVidBtn" disabled>🎬 Export Video</button>
+      </div>
+      
+      <div class="slider-group">
+        <label><span>Sensitivity</span>
+          <input type="number" id="sensNum" min="0.1" max="10" step="0.00001" value="1.5" class="num-input">
+        </label>
+        <input type="range" id="sens" min="0.1" max="10" step="0.01" value="1.5">
+      </div>
+      <div class="slider-group">
+        <label><span>Smoothing</span>
+          <input type="number" id="smoothNum" min="0" max="0.95" step="0.00001" value="0.4" class="num-input">
+        </label>
+        <input type="range" id="smooth" min="0" max="0.95" step="0.01" value="0.4">
+      </div>
+      <div class="slider-group">
+        <label><span>Mouth Size</span>
+          <input type="number" id="mouthNum" min="0.3" max="2" step="0.01" value="1" class="num-input">
+        </label>
+        <input type="range" id="mouthSize" min="0.3" max="2" step="0.01" value="1">
+      </div>
+      <div class="slider-group">
+        <label><span>GIF FPS</span>
+          <input type="number" id="fpsNum" min="1" max="30" step="1" value="12" class="num-input">
+        </label>
+        <input type="range" id="gifFps" min="1" max="30" step="1" value="12">
+      </div>
+    </div>
+  </div>
+  <footer>guest.lol · faces from Archive.zip</footer>
+
+<script>
+const FACE_SCALE = 1.15;
+const ZIP_URLS = [
+  'guest-zip-faces-lipsync.zip',
+  'https://raw.githubusercontent.com/GuestVRGT/guest.lol/main/guest-zip-faces-lipsync.zip'
+];
+
+const canvas = document.getElementById('faceCanvas');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const visCanvas = document.getElementById('visCanvas');
+const visCtx = visCanvas.getContext('2d');
+const idleGrid = document.getElementById('idleGrid');
+const audioInput = document.getElementById('audioInput');
+const playBtn = document.getElementById('playBtn');
+const stopBtn = document.getElementById('stopBtn');
+const exportGifBtn = document.getElementById('exportGifBtn');
+const exportVidBtn = document.getElementById('exportVidBtn');
+const statusEl = document.getElementById('status');
+const progressBar = document.getElementById('progressBar');
+const progressFill = document.getElementById('progressFill');
+const sensSlider = document.getElementById('sens');
+const smoothSlider = document.getElementById('smooth');
+const fpsSlider = document.getElementById('gifFps');
+const mouthSlider = document.getElementById('mouthSize');
+const faceSearch = document.getElementById('faceSearch');
+
+let selectedFace = null;
+let idleImg = new Image();
+let isPlaying = false;
+let isExporting = false;
+let audioCtx, analyser, source, audioBuffer;
+let currentLevel = 0;
+let animId;
+let mediaRecorder = null;
+let recordedChunks = [];
+let mediaElement = null;
+let mediaObjectUrl = null;
+let useMediaElement = false;
+
+const faceImgs = {};
+let FACE_DATA = {};
+let FACE_FILES = [];
+
+function displayName(filename) {
+  return filename.replace(/\.png$/i, '');
+}
+
+function loadFace(filename) {
+  return new Promise((resolve) => {
+    if (faceImgs[filename] && faceImgs[filename].complete) {
+      resolve(faceImgs[filename]);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => { faceImgs[filename] = img; resolve(img); };
+    img.onerror = () => resolve(null);
+    img.src = FACE_DATA[filename] || '';
+  });
+}
+
+function buildGrid(filter = '') {
+  idleGrid.innerHTML = '';
+  const q = filter.trim().toLowerCase();
+  const list = FACE_FILES.filter(f => !q || displayName(f).toLowerCase().includes(q));
+  document.getElementById('faceCount').textContent = '(' + list.length + ')';
+  list.forEach(name => {
+    const img = document.createElement('img');
+    img.className = 'face-thumb' + (name === selectedFace ? ' active' : '');
+    img.src = FACE_DATA[name] || '';
+    img.title = displayName(name);
+    img.loading = 'lazy';
+    img.onclick = async () => {
+      if (isExporting) return;
+      document.querySelectorAll('.face-thumb').forEach(t => t.classList.remove('active'));
+      img.classList.add('active');
+      selectedFace = name;
+      idleImg = await loadFace(name);
+      if (!isPlaying) drawFace(0);
+      statusEl.textContent = 'Face: ' + displayName(name);
+    };
+    idleGrid.appendChild(img);
+  });
+}
+
+faceSearch.oninput = () => buildGrid(faceSearch.value);
+
+async function loadFacesFromZip() {
+  statusEl.textContent = 'Loading faces from zip...';
+  let lastErr = null;
+  for (const url of ZIP_URLS) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const buf = await res.arrayBuffer();
+      const zip = await JSZip.loadAsync(buf);
+      const data = {};
+      const names = [];
+      const jobs = [];
+      zip.forEach((path, file) => {
+        if (file.dir) return;
+        const base = path.split('/').pop();
+        if (!base || !base.toLowerCase().endsWith('.png')) return;
+        if (path.includes('__MACOSX')) return;
+        jobs.push(
+          file.async('blob').then(blob => {
+            data[base] = URL.createObjectURL(blob);
+            names.push(base);
+          })
+        );
+      });
+      await Promise.all(jobs);
+      FACE_DATA = data;
+      FACE_FILES = names.sort();
+      statusEl.textContent = 'Loaded ' + FACE_FILES.length + ' faces! Pick one & load audio';
+      buildGrid();
+      if (FACE_FILES.length) {
+        selectedFace = FACE_FILES.includes('smile.png') ? 'smile.png' : FACE_FILES[0];
+        idleImg = await loadFace(selectedFace);
+        drawFace(0);
+        idleGrid.querySelectorAll('.face-thumb').forEach(t => {
+          if (t.title === displayName(selectedFace)) t.classList.add('active');
+        });
+      }
+      return;
+    } catch (e) {
+      lastErr = e;
+      console.warn('zip load failed for', url, e);
+    }
+  }
+  statusEl.textContent = 'Could not load faces zip — ' + (lastErr && lastErr.message);
+}
+
+loadFacesFromZip();
+
+function drawFace(mouthLevel) {
+  const size = canvas.width;
+  ctx.clearRect(0, 0, size, size);
+  ctx.fillStyle = '#f3f0fa';
+  ctx.fillRect(0, 0, size, size);
+  const faceSize = Math.floor(size * 0.82 * FACE_SCALE);
+  const x = Math.floor((size - faceSize) / 2);
+  const y = Math.floor((size - faceSize) / 2);
+  ctx.imageSmoothingEnabled = false;
+
+  if (idleImg && idleImg.complete && idleImg.naturalWidth) {
+    ctx.drawImage(idleImg, x, y, faceSize, faceSize);
+  }
+
+  // GT-style black mouth overlay
+  if ((isPlaying || isExporting) && mouthLevel > 0.015) {
+    const mScale = parseFloat(mouthSlider.value) || 1;
+    const open = Math.min(1, mouthLevel);
+    const mx = size / 2;
+    const my = y + faceSize * 0.68;
+    const mw = Math.floor(faceSize * 0.32 * mScale * (0.4 + open * 0.7));
+    const mh = Math.floor(faceSize * 0.14 * mScale * (0.15 + open * 1.15));
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = '#0a0a0c';
+    const rx = Math.floor(mx - mw / 2);
+    const ry = Math.floor(my - mh / 2);
+    const r = Math.max(2, Math.floor(mh * 0.35));
+    ctx.beginPath();
+    ctx.moveTo(rx + r, ry);
+    ctx.lineTo(rx + mw - r, ry);
+    ctx.quadraticCurveTo(rx + mw, ry, rx + mw, ry + r);
+    ctx.lineTo(rx + mw, ry + mh - r);
+    ctx.quadraticCurveTo(rx + mw, ry + mh, rx + mw - r, ry + mh);
+    ctx.lineTo(rx + r, ry + mh);
+    ctx.quadraticCurveTo(rx, ry + mh, rx, ry + mh - r);
+    ctx.lineTo(rx, ry + r);
+    ctx.quadraticCurveTo(rx, ry, rx + r, ry);
+    ctx.closePath();
+    ctx.fill();
+
+    if (open > 0.4) {
+      ctx.fillStyle = '#3a1520';
+      const iw = Math.floor(mw * 0.55);
+      const ih = Math.floor(mh * 0.45);
+      ctx.fillRect(Math.floor(mx - iw / 2), Math.floor(my - ih * 0.1), iw, ih);
+    }
+    ctx.restore();
+  }
+
+  const grad = ctx.createRadialGradient(size/2, size/2, size*0.28, size/2, size/2, size*0.72);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.18)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+}
+
+function setExportingUI(on) {
+  isExporting = on;
+  const hasMedia = !!(audioBuffer || useMediaElement);
+  playBtn.disabled = on || !hasMedia;
+  exportGifBtn.disabled = on || !audioBuffer;
+  exportVidBtn.disabled = on || !audioBuffer;
+  progressBar.style.display = on ? 'block' : 'none';
+  if (!on) progressFill.style.width = '0%';
+}
+
+const sensNum = document.getElementById('sensNum');
+const smoothNum = document.getElementById('smoothNum');
+const fpsNum = document.getElementById('fpsNum');
+const mouthNum = document.getElementById('mouthNum');
+
+function syncSens(fromSlider) {
+  if (fromSlider) sensNum.value = sensSlider.value;
+  else {
+    let v = parseFloat(sensNum.value);
+    if (isNaN(v)) v = 1.5;
+    v = Math.max(0.1, Math.min(10, v));
+    sensNum.value = v;
+    sensSlider.value = v;
+  }
+}
+function syncSmooth(fromSlider) {
+  if (fromSlider) smoothNum.value = smoothSlider.value;
+  else {
+    let v = parseFloat(smoothNum.value);
+    if (isNaN(v)) v = 0.4;
+    v = Math.max(0, Math.min(0.95, v));
+    smoothNum.value = v;
+    smoothSlider.value = v;
+  }
+}
+function syncFps(fromSlider) {
+  if (fromSlider) fpsNum.value = fpsSlider.value;
+  else {
+    let v = parseInt(fpsNum.value, 10);
+    if (isNaN(v)) v = 12;
+    v = Math.max(1, Math.min(30, v));
+    fpsNum.value = v;
+    fpsSlider.value = v;
+  }
+}
+function syncMouth(fromSlider) {
+  if (fromSlider) mouthNum.value = mouthSlider.value;
+  else {
+    let v = parseFloat(mouthNum.value);
+    if (isNaN(v)) v = 1;
+    v = Math.max(0.3, Math.min(2, v));
+    mouthNum.value = v;
+    mouthSlider.value = v;
+  }
+}
+
+sensSlider.oninput = () => syncSens(true);
+smoothSlider.oninput = () => syncSmooth(true);
+fpsSlider.oninput = () => syncFps(true);
+mouthSlider.oninput = () => syncMouth(true);
+sensNum.onchange = sensNum.oninput = () => syncSens(false);
+smoothNum.onchange = smoothNum.oninput = () => syncSmooth(false);
+fpsNum.onchange = fpsNum.oninput = () => syncFps(false);
+mouthNum.onchange = mouthNum.oninput = () => syncMouth(false);
+
+audioInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  statusEl.textContent = 'Loading...';
+  playBtn.disabled = true; exportGifBtn.disabled = true; exportVidBtn.disabled = true;
+  audioBuffer = null;
+  useMediaElement = false;
+  if (mediaObjectUrl) { URL.revokeObjectURL(mediaObjectUrl); mediaObjectUrl = null; }
+  if (mediaElement) { mediaElement.pause(); mediaElement.src = ''; mediaElement = null; }
+
+  try {
+    if (audioCtx) { try { await audioCtx.close(); } catch(_){} }
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ab = await file.arrayBuffer();
+
+    try {
+      audioBuffer = await audioCtx.decodeAudioData(ab.slice(0));
+      useMediaElement = false;
+      statusEl.textContent = 'Ready: ' + file.name + ' (' + audioBuffer.duration.toFixed(1) + 's)';
+      playBtn.disabled = false; exportGifBtn.disabled = false; exportVidBtn.disabled = false;
+      return;
+    } catch (decodeErr) {
+      console.warn('decodeAudioData failed', decodeErr);
+    }
+
+    mediaObjectUrl = URL.createObjectURL(file);
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov)$/i.test(file.name);
+    mediaElement = document.createElement(isVideo ? 'video' : 'audio');
+    mediaElement.preload = 'auto';
+    mediaElement.src = mediaObjectUrl;
+    mediaElement.crossOrigin = 'anonymous';
+
+    await new Promise((resolve, reject) => {
+      mediaElement.onloadedmetadata = () => resolve();
+      mediaElement.onerror = () => reject(new Error('Could not load media'));
+      setTimeout(() => reject(new Error('Media load timeout')), 15000);
+    });
+
+    useMediaElement = true;
+    const dur = mediaElement.duration;
+    if (!isFinite(dur) || dur <= 0) throw new Error('Unknown duration');
+    statusEl.textContent = 'Ready: ' + file.name + ' (' + dur.toFixed(1) + 's)';
+    playBtn.disabled = false;
+    exportGifBtn.disabled = false;
+    exportVidBtn.disabled = false;
+  } catch (err) {
+    statusEl.textContent = 'Error loading file — try mp3/wav/mp4';
+    console.error(err);
+  }
+});
+
+playBtn.onclick = () => { if ((!audioBuffer && !useMediaElement) || isPlaying || isExporting) return; startPlay(); };
+stopBtn.onclick = () => {
+  if (isExporting && mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+  stopPlay();
+};
+
+async function startPlay() {
+  if (audioCtx.state === 'suspended') await audioCtx.resume();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  analyser.smoothingTimeConstant = 0.35;
+
+  if (useMediaElement && mediaElement) {
+    const srcUrl = mediaElement.src;
+    const tag = mediaElement.tagName;
+    mediaElement.pause();
+    mediaElement = document.createElement(tag === 'VIDEO' ? 'video' : 'audio');
+    mediaElement.src = srcUrl;
+    mediaElement.preload = 'auto';
+    await new Promise(r => { mediaElement.onloadedmetadata = r; mediaElement.onerror = r; });
+    mediaElement.currentTime = 0;
+    const mes = audioCtx.createMediaElementSource(mediaElement);
+    mes.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    source = { stop: () => { try { mediaElement.pause(); mediaElement.currentTime = 0; } catch(_){} } };
+    mediaElement.onended = () => {
+      isPlaying = false; playBtn.disabled = false;
+      statusEl.textContent = 'Finished!';
+      currentLevel = 0; drawFace(0); cancelAnimationFrame(animId);
+    };
+    await mediaElement.play();
+  } else {
+    source = audioCtx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    source.onended = () => {
+      isPlaying = false; playBtn.disabled = false;
+      statusEl.textContent = 'Finished!';
+      currentLevel = 0; drawFace(0); cancelAnimationFrame(animId);
+    };
+    source.start(0);
+  }
+  isPlaying = true; playBtn.disabled = true;
+  statusEl.textContent = 'Lipsyncing... 🎤';
+  animate();
+}
+
+function stopPlay() {
+  if (source) { try { source.stop(); } catch(e){} source = null; }
+  isPlaying = false;
+  playBtn.disabled = (!audioBuffer && !useMediaElement) || isExporting;
+  if (!isExporting) {
+    statusEl.textContent = (audioBuffer || useMediaElement) ? 'Stopped' : 'Pick a face & load audio!';
+    currentLevel = 0; drawFace(0);
+  }
+  cancelAnimationFrame(animId);
+}
+
+function animate() {
+  if ((!isPlaying && !isExporting) || !analyser) return;
+  const dataArr = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(dataArr);
+  let sum = 0;
+  const start = 2, end = Math.min(36, dataArr.length);
+  for (let i = start; i < end; i++) sum += dataArr[i];
+  let level = Math.min(1, ((sum / (end - start)) / 255) * parseFloat(sensSlider.value));
+  const smooth = parseFloat(smoothSlider.value);
+  currentLevel = currentLevel * smooth + level * (1 - smooth);
+  drawFace(currentLevel);
+  if (!isExporting) drawVis(dataArr);
+  animId = requestAnimationFrame(animate);
+}
+
+function drawVis(dataArr) {
+  const dpr = devicePixelRatio || 1;
+  visCanvas.width = visCanvas.offsetWidth * dpr;
+  visCanvas.height = visCanvas.offsetHeight * dpr;
+  const w = visCanvas.width, h = visCanvas.height;
+  visCtx.clearRect(0, 0, w, h);
+  const bars = 28, step = Math.floor(dataArr.length / bars), barW = w / bars;
+  for (let i = 0; i < bars; i++) {
+    const v = dataArr[i * step] / 255;
+    const bh = v * h * 0.92;
+    const g = visCtx.createLinearGradient(0, h, 0, h - bh);
+    g.addColorStop(0, '#c084fc'); g.addColorStop(1, '#f0abfc');
+    visCtx.fillStyle = g;
+    visCtx.fillRect(i * barW + 1, h - bh, barW - 2, bh);
+  }
+}
+
+exportVidBtn.onclick = async () => {
+  if ((!audioBuffer && !useMediaElement) || isExporting) return;
+  if (!audioBuffer) {
+    statusEl.textContent = 'Export Video needs decoded audio (mp3/wav).';
+    return;
+  }
+  setExportingUI(true);
+  statusEl.textContent = 'Recording video...';
+  if (audioCtx.state === 'suspended') await audioCtx.resume();
+  const dest = audioCtx.createMediaStreamDestination();
+  source = audioCtx.createBufferSource();
+  source.buffer = audioBuffer;
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256; analyser.smoothingTimeConstant = 0.35;
+  source.connect(analyser); analyser.connect(dest); analyser.connect(audioCtx.destination);
+  const canvasStream = canvas.captureStream(30);
+  const combined = new MediaStream([...canvasStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+  recordedChunks = [];
+  const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus' : 'video/webm';
+  mediaRecorder = new MediaRecorder(combined, { mimeType: mime, videoBitsPerSecond: 2500000 });
+  mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+  mediaRecorder.onstop = () => {
+    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'guest-lol-lipsync.webm'; a.click();
+    URL.revokeObjectURL(url);
+    statusEl.textContent = 'Video downloaded!';
+    setExportingUI(false); currentLevel = 0; drawFace(0); isPlaying = false;
+  };
+  mediaRecorder.start(100);
+  isPlaying = true;
+  source.onended = () => setTimeout(() => { if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop(); }, 150);
+  source.start(0); animate();
+};
+
+exportGifBtn.onclick = async () => {
+  if (!audioBuffer || isExporting) return;
+  if (typeof GIF === 'undefined') { statusEl.textContent = 'GIF library needs internet.'; return; }
+  const dur = audioBuffer.duration;
+  let fps = parseInt(fpsSlider.value, 10) || 12;
+  if (dur > 15 && fps > 10) { fps = 10; fpsSlider.value = 10; fpsNum.value = 10; }
+  setExportingUI(true);
+  statusEl.textContent = 'Analyzing audio...';
+  const frameDelay = Math.round(1000 / fps);
+  const totalFrames = Math.ceil(dur * fps);
+  const channelData = audioBuffer.getChannelData(0);
+  const sampleRate = audioBuffer.sampleRate;
+  const levels = new Float32Array(totalFrames);
+  const samplesPerFrame = Math.max(1, Math.floor(sampleRate / fps));
+  let smoothLevel = 0;
+  const sens = parseFloat(sensSlider.value) || 1.5;
+  const smooth = parseFloat(smoothSlider.value) || 0.4;
+  await new Promise((resolve) => {
+    let f = 0;
+    function analyzeChunk() {
+      const end = Math.min(f + 30, totalFrames);
+      for (; f < end; f++) {
+        const a = f * samplesPerFrame;
+        const b = Math.min(a + samplesPerFrame, channelData.length);
+        let sum = 0, count = 0;
+        const step = (b - a) > 2000 ? 4 : 1;
+        for (let i = a; i < b; i += step) { sum += channelData[i] * channelData[i]; count++; }
+        let level = count > 0 ? Math.sqrt(sum / count) : 0;
+        level = Math.min(1, level * 8 * sens);
+        smoothLevel = smoothLevel * smooth + level * (1 - smooth);
+        levels[f] = smoothLevel;
+      }
+      progressFill.style.width = ((f / totalFrames) * 40) + '%';
+      if (f < totalFrames) setTimeout(analyzeChunk, 0);
+      else resolve();
+    }
+    analyzeChunk();
+  });
+  statusEl.textContent = 'Drawing GIF frames...';
+  const gif = new GIF({ workers: 2, quality: dur > 12 ? 18 : 12, width: canvas.width, height: canvas.height, workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js' });
+  let frameIdx = 0;
+  const batchSize = dur > 15 ? 3 : 6;
+  function addNextBatch() {
+    if (!isExporting) return;
+    const end = Math.min(frameIdx + batchSize, totalFrames);
+    for (; frameIdx < end; frameIdx++) {
+      drawFace(levels[frameIdx]);
+      gif.addFrame(canvas, { delay: frameDelay, copy: true });
+    }
+    progressFill.style.width = (40 + (frameIdx / totalFrames) * 40) + '%';
+    if (frameIdx < totalFrames) setTimeout(addNextBatch, 0);
+    else {
+      statusEl.textContent = 'Encoding GIF...';
+      gif.on('finished', (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'guest-lol-lipsync.gif'; a.click();
+        URL.revokeObjectURL(url);
+        statusEl.textContent = 'GIF downloaded! 🎉';
+        setExportingUI(false); currentLevel = 0; drawFace(0);
+      });
+      gif.on('progress', (p) => { progressFill.style.width = (80 + p * 20) + '%'; });
+      try { gif.render(); } catch (err) { statusEl.textContent = 'GIF failed'; setExportingUI(false); }
+    }
+  }
+  addNextBatch();
+};
+
+drawFace(0);
+</script>
+</body>
+</html>
