@@ -1,0 +1,1 @@
+const MOUTH_FRAMES = []; // placeholder - will update
