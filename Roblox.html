@@ -355,20 +355,15 @@
   <footer>guest.lol · faces from Archive.zip</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="face_list.js"></script>
 <script src="mouths-data.js"></script>
 <script>
 const FACE_SCALE = 1.15;
-// Mouth frames (eyes ripped off) — fewer frames = smoother, slower lipsync
 const mouthImgs = (typeof MOUTH_FRAMES !== 'undefined' ? MOUTH_FRAMES : []).map(src => {
   const img = new Image();
   img.src = src;
   return img;
 });
-const ZIP_URLS = [
-  'guest-zip-faces-lipsync.zip',
-  'guest-eyes-mouths-lipsync.zip',
-  'https://raw.githubusercontent.com/GuestVRGT/guest.lol/main/guest-zip-faces-lipsync.zip'
-];
 const FACES_DIR = 'faces/';
 
 const canvas = document.getElementById('faceCanvas');
@@ -406,7 +401,7 @@ let useMediaElement = false;
 
 const faceImgs = {};
 let FACE_DATA = {};
-let FACE_FILES = [];
+// FACE_FILES comes from face_list.js
 
 function displayName(filename) {
   return filename.replace(/\.png$/i, '');
@@ -433,7 +428,7 @@ function loadFace(filename) {
 function buildGrid(filter = '') {
   idleGrid.innerHTML = '';
   const q = filter.trim().toLowerCase();
-  const list = FACE_FILES.filter(f => !q || displayName(f).toLowerCase().includes(q));
+  const list = (typeof FACE_FILES !== 'undefined' ? FACE_FILES : []).filter(f => !q || displayName(f).toLowerCase().includes(q));
   document.getElementById('faceCount').textContent = '(' + list.length + ')';
   list.forEach(name => {
     const img = document.createElement('img');
@@ -456,94 +451,27 @@ function buildGrid(filter = '') {
 
 faceSearch.oninput = () => buildGrid(faceSearch.value);
 
-async function tryLoadFromFolder() {
-  // Local faces/ folder (works when you unzip the package)
-  if (typeof FACE_FILES !== 'undefined' && Array.isArray(FACE_FILES) && FACE_FILES.length) {
-    return FACE_FILES.slice();
-  }
-  // Try face_list.js style
-  try {
-    const res = await fetch('face_list.js');
-    if (res.ok) {
-      const text = await res.text();
-      // eval-safe extract: FACE_FILES = [...]
-      const m = text.match(/FACE_FILES\s*=\s*(\[[\s\S]*?\])/);
-      if (m) {
-        const arr = JSON.parse(m[1].replace(/'/g, '"'));
-        if (Array.isArray(arr) && arr.length) return arr;
-      }
-    }
-  } catch (_) {}
-  return null;
-}
-
-async function loadFacesFromZip() {
+async function loadFaces() {
   statusEl.textContent = 'Loading faces...';
-
-  // 1) Prefer local faces/ folder
-  const folderList = await tryLoadFromFolder();
-  if (folderList && folderList.length) {
-    FACE_FILES = folderList.sort();
-    FACE_DATA = {}; // use faces/ paths
-    statusEl.textContent = 'Loaded ' + FACE_FILES.length + ' eye faces from folder!';
-    buildGrid();
-    selectedFace = FACE_FILES.includes('smile.png') ? 'smile.png' : FACE_FILES[0];
-    idleImg = await loadFace(selectedFace);
-    drawFace(0);
-    idleGrid.querySelectorAll('.face-thumb').forEach(t => {
-      if (t.title === displayName(selectedFace)) t.classList.add('active');
-    });
+  const list = (typeof FACE_FILES !== 'undefined' && Array.isArray(FACE_FILES)) ? FACE_FILES.slice() : [];
+  if (!list.length) {
+    statusEl.textContent = 'No faces listed — check face_list.js';
     return;
   }
-
-  // 2) Fall back to zip
-  let lastErr = null;
-  for (const url of ZIP_URLS) {
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const buf = await res.arrayBuffer();
-      const zip = await JSZip.loadAsync(buf);
-      const data = {};
-      const names = [];
-      const jobs = [];
-      zip.forEach((path, file) => {
-        if (file.dir) return;
-        const base = path.split('/').pop();
-        if (!base || !base.toLowerCase().endsWith('.png')) return;
-        if (path.includes('__MACOSX')) return;
-        jobs.push(
-          file.async('blob').then(blob => {
-            data[base] = URL.createObjectURL(blob);
-            names.push(base);
-          })
-        );
-      });
-      await Promise.all(jobs);
-      FACE_DATA = data;
-      FACE_FILES = names.sort();
-      statusEl.textContent = 'Loaded ' + FACE_FILES.length + ' eye faces! Pick eyes & load audio';
-      buildGrid();
-      if (FACE_FILES.length) {
-        selectedFace = FACE_FILES.includes('smile.png') ? 'smile.png' : FACE_FILES[0];
-        idleImg = await loadFace(selectedFace);
-        drawFace(0);
-        idleGrid.querySelectorAll('.face-thumb').forEach(t => {
-          if (t.title === displayName(selectedFace)) t.classList.add('active');
-        });
-      }
-      return;
-    } catch (e) {
-      lastErr = e;
-      console.warn('zip load failed for', url, e);
-    }
-  }
-  statusEl.textContent = 'Could not load faces — put faces/ next to this page or the zip';
+  FACE_DATA = {};
+  statusEl.textContent = 'Loaded ' + list.length + ' faces from faces/';
+  buildGrid();
+  const prefer = ['Optimist.png', 'Awesome Face.png', 'smile.png', 'Winning Smile.png'];
+  selectedFace = prefer.find(p => list.includes(p)) || list[0];
+  idleImg = await loadFace(selectedFace);
+  drawFace(0);
+  idleGrid.querySelectorAll('.face-thumb').forEach(t => {
+    if (t.title === displayName(selectedFace)) t.classList.add('active');
+  });
 }
 
-loadFacesFromZip();
+loadFaces();
 
-// Smoothed mouth index so it doesn't flicker wildly
 let smoothMouthIdx = 0;
 
 function drawFace(mouthLevel) {
@@ -556,24 +484,19 @@ function drawFace(mouthLevel) {
   const y = Math.floor((size - faceSize) / 2);
   ctx.imageSmoothingEnabled = false;
 
-  // 1) Full selected face first → eyes always visible
   if (idleImg && idleImg.complete && idleImg.naturalWidth) {
     ctx.drawImage(idleImg, x, y, faceSize, faceSize);
   }
 
-  // 2) Overlay separate mouth layer (eyes ripped → transparent top)
   const frames = mouthImgs;
   if (frames.length) {
-    // Only use a few steps so it doesn't thrash
     const steps = Math.min(frames.length, 6);
     let target;
     if (isPlaying || isExporting) {
-      // map level → step, then ease toward it
       target = Math.max(0, Math.min(steps - 1, Math.round(mouthLevel * (steps - 1))));
     } else {
       target = 0;
     }
-    // slow the change (lower = slower)
     smoothMouthIdx += (target - smoothMouthIdx) * 0.18;
     const idx = Math.max(0, Math.min(frames.length - 1, Math.round(smoothMouthIdx * (frames.length - 1) / Math.max(1, steps - 1))));
     const mouth = frames[idx];
@@ -582,7 +505,6 @@ function drawFace(mouthLevel) {
     }
   }
 
-  // soft vignette
   const grad = ctx.createRadialGradient(size/2, size/2, size*0.28, size/2, size/2, size*0.72);
   grad.addColorStop(0, 'rgba(0,0,0,0)');
   grad.addColorStop(1, 'rgba(0,0,0,0.18)');
@@ -619,7 +541,7 @@ function syncSmooth(fromSlider) {
   if (fromSlider) smoothNum.value = smoothSlider.value;
   else {
     let v = parseFloat(smoothNum.value);
-    if (isNaN(v)) v = 0.4;
+    if (isNaN(v)) v = 0.65;
     v = Math.max(0, Math.min(0.95, v));
     smoothNum.value = v;
     smoothSlider.value = v;
@@ -677,7 +599,7 @@ audioInput.addEventListener('change', async (e) => {
       playBtn.disabled = false; exportGifBtn.disabled = false; exportVidBtn.disabled = false;
       return;
     } catch (decodeErr) {
-      console.warn('decodeAudioData failed, trying media element', decodeErr);
+      console.warn('decodeAudioData failed', decodeErr);
     }
 
     mediaObjectUrl = URL.createObjectURL(file);
@@ -696,12 +618,12 @@ audioInput.addEventListener('change', async (e) => {
     useMediaElement = true;
     const dur = mediaElement.duration;
     if (!isFinite(dur) || dur <= 0) throw new Error('Unknown duration');
-    statusEl.textContent = 'Ready: ' + file.name + ' (' + dur.toFixed(1) + 's) [video/audio]';
+    statusEl.textContent = 'Ready: ' + file.name + ' (' + dur.toFixed(1) + 's)';
     playBtn.disabled = false;
     exportGifBtn.disabled = false;
     exportVidBtn.disabled = false;
   } catch (err) {
-    statusEl.textContent = 'Error loading file — try a different format (mp3/wav/mp4)';
+    statusEl.textContent = 'Error loading file — try mp3/wav/mp4';
     console.error(err);
   }
 });
@@ -730,7 +652,7 @@ async function startPlay() {
     const mes = audioCtx.createMediaElementSource(mediaElement);
     mes.connect(analyser);
     analyser.connect(audioCtx.destination);
-    source = { stop: () => { try { mediaElement.pause(); mediaElement.currentTime = 0; } catch(_){} }, _mes: mes };
+    source = { stop: () => { try { mediaElement.pause(); mediaElement.currentTime = 0; } catch(_){} } };
     mediaElement.onended = () => {
       isPlaying = false; playBtn.disabled = false;
       statusEl.textContent = 'Finished!';
@@ -759,7 +681,7 @@ function stopPlay() {
   isPlaying = false;
   playBtn.disabled = (!audioBuffer && !useMediaElement) || isExporting;
   if (!isExporting) {
-    statusEl.textContent = (audioBuffer || useMediaElement) ? 'Stopped' : 'Pick a face & load audio!';
+    statusEl.textContent = (audioBuffer || useMediaElement) ? 'Stopped' : 'Pick eyes & load audio!';
     currentLevel = 0; drawFace(0);
   }
   cancelAnimationFrame(animId);
@@ -799,12 +721,12 @@ function drawVis(dataArr) {
 
 exportVidBtn.onclick = async () => {
   if ((!audioBuffer && !useMediaElement) || isExporting) return;
-  if (!audioBuffer && useMediaElement) {
-    statusEl.textContent = 'For TikTok/video files, Play works! Export Video needs convert to mp3, or try Play + screen record.';
+  if (!audioBuffer) {
+    statusEl.textContent = 'Export Video needs decoded audio (mp3/wav).';
     return;
   }
   setExportingUI(true);
-  statusEl.textContent = 'Recording video (' + audioBuffer.duration.toFixed(1) + 's)...';
+  statusEl.textContent = 'Recording video...';
   if (audioCtx.state === 'suspended') await audioCtx.resume();
   const dest = audioCtx.createMediaStreamDestination();
   source = audioCtx.createBufferSource();
@@ -830,48 +752,25 @@ exportVidBtn.onclick = async () => {
   isPlaying = true;
   source.onended = () => setTimeout(() => { if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop(); }, 150);
   source.start(0); animate();
-  const dur = audioBuffer.duration, startT = audioCtx.currentTime;
-  const progInterval = setInterval(() => {
-    if (!isExporting) { clearInterval(progInterval); return; }
-    progressFill.style.width = Math.min(100, ((audioCtx.currentTime - startT) / dur) * 100) + '%';
-  }, 100);
 };
 
 exportGifBtn.onclick = async () => {
-  if ((!audioBuffer && !useMediaElement) || isExporting) return;
-  if (!audioBuffer && useMediaElement) {
-    statusEl.textContent = 'GIF export needs decoded audio — Play still works for TikTok videos!';
-    return;
-  }
-  if (typeof GIF === 'undefined') { statusEl.textContent = 'GIF library needs internet once.'; return; }
-
+  if (!audioBuffer || isExporting) return;
+  if (typeof GIF === 'undefined') { statusEl.textContent = 'GIF library needs internet.'; return; }
   const dur = audioBuffer.duration;
   let fps = parseInt(fpsSlider.value, 10) || 12;
-  if (dur > 15 && fps > 10) {
-    fps = 10;
-    fpsSlider.value = 10;
-    fpsNum.value = 10;
-    statusEl.textContent = 'Long clip detected — using 10 FPS for GIF stability...';
-  }
-  if (dur > 45) {
-    statusEl.textContent = 'Clip is very long (' + dur.toFixed(0) + 's). GIF may fail — try Export Video instead!';
-    await new Promise(r => setTimeout(r, 1500));
-  }
-
+  if (dur > 15 && fps > 10) { fps = 10; fpsSlider.value = 10; fpsNum.value = 10; }
   setExportingUI(true);
-  statusEl.textContent = 'Analyzing audio (' + dur.toFixed(1) + 's)...';
-
+  statusEl.textContent = 'Analyzing audio...';
   const frameDelay = Math.round(1000 / fps);
   const totalFrames = Math.ceil(dur * fps);
-
   const channelData = audioBuffer.getChannelData(0);
   const sampleRate = audioBuffer.sampleRate;
   const levels = new Float32Array(totalFrames);
   const samplesPerFrame = Math.max(1, Math.floor(sampleRate / fps));
   let smoothLevel = 0;
   const sens = parseFloat(sensSlider.value) || 1.5;
-  const smooth = parseFloat(smoothSlider.value) || 0.4;
-
+  const smooth = parseFloat(smoothSlider.value) || 0.65;
   await new Promise((resolve) => {
     let f = 0;
     function analyzeChunk() {
@@ -893,20 +792,10 @@ exportGifBtn.onclick = async () => {
     }
     analyzeChunk();
   });
-
-  statusEl.textContent = 'Drawing GIF frames 0/' + totalFrames;
-  const quality = dur > 12 ? 18 : 12;
-  const gif = new GIF({
-    workers: 2,
-    quality: quality,
-    width: canvas.width,
-    height: canvas.height,
-    workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
-  });
-
+  statusEl.textContent = 'Drawing GIF frames...';
+  const gif = new GIF({ workers: 2, quality: dur > 12 ? 18 : 12, width: canvas.width, height: canvas.height, workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js' });
   let frameIdx = 0;
   const batchSize = dur > 15 ? 3 : 6;
-
   function addNextBatch() {
     if (!isExporting) return;
     const end = Math.min(frameIdx + batchSize, totalFrames);
@@ -914,35 +803,20 @@ exportGifBtn.onclick = async () => {
       drawFace(levels[frameIdx]);
       gif.addFrame(canvas, { delay: frameDelay, copy: true });
     }
-    const pct = 40 + (frameIdx / totalFrames) * 40;
-    progressFill.style.width = pct + '%';
-    statusEl.textContent = 'Drawing frames ' + frameIdx + '/' + totalFrames;
-    if (frameIdx < totalFrames) {
-      setTimeout(addNextBatch, 0);
-    } else {
-      statusEl.textContent = 'Encoding GIF (this can take a bit for long clips)...';
+    progressFill.style.width = (40 + (frameIdx / totalFrames) * 40) + '%';
+    if (frameIdx < totalFrames) setTimeout(addNextBatch, 0);
+    else {
+      statusEl.textContent = 'Encoding GIF...';
       gif.on('finished', (blob) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        a.download = 'guest-lol-lipsync.gif';
-        a.click();
+        a.href = url; a.download = 'guest-lol-lipsync.gif'; a.click();
         URL.revokeObjectURL(url);
-        statusEl.textContent = 'GIF downloaded! (' + (blob.size/1024/1024).toFixed(1) + ' MB) 🎉';
-        setExportingUI(false);
-        currentLevel = 0;
-        drawFace(0);
+        statusEl.textContent = 'GIF downloaded! 🎉';
+        setExportingUI(false); currentLevel = 0; drawFace(0);
       });
-      gif.on('progress', (p) => {
-        progressFill.style.width = (80 + p * 20) + '%';
-      });
-      try {
-        gif.render();
-      } catch (err) {
-        statusEl.textContent = 'GIF encode failed — try Export Video or lower FPS';
-        console.error(err);
-        setExportingUI(false);
-      }
+      gif.on('progress', (p) => { progressFill.style.width = (80 + p * 20) + '%'; });
+      try { gif.render(); } catch (err) { statusEl.textContent = 'GIF failed'; setExportingUI(false); }
     }
   }
   addNextBatch();
