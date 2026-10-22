@@ -68,9 +68,7 @@
     position: relative;
     overflow: hidden;
   }
-  .panel::before {
-    display: none;
-  }
+  .panel::before { display: none; }
   .preview-panel {
     display: flex;
     flex-direction: column;
@@ -116,8 +114,6 @@
     border: 1px solid rgba(255,255,255,0.12);
     transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
     font-family: inherit;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
   }
   label.file-btn {
     background: linear-gradient(135deg, #c084fc, #7c3aed);
@@ -295,7 +291,7 @@
 </head>
 <body>
   <h1>guest.lol</h1>
-  <p class="subtitle">Zip Faces Lipsync · white theme · faces from Archive.zip</p>
+  <p class="subtitle">Zip Faces Lipsync · white theme · 168 faces</p>
   
   <div class="layout">
     <div class="panel preview-panel">
@@ -303,7 +299,7 @@
       <div class="vis"><canvas id="visCanvas"></canvas></div>
       <div id="progressBar"><div id="progressFill"></div></div>
       <p id="status">Pick a face & load audio!</p>
-      <p class="hint">Simple mouth overlay · works with any of the zip faces</p>
+      <p class="hint">Unzip guest-zip-faces-lipsync.zip next to this page so faces/ folder exists</p>
     </div>
     
     <div class="panel controls-panel">
@@ -354,9 +350,10 @@
   </div>
   <footer>guest.lol · faces from Archive.zip</footer>
 
-<script src="faces-data.js"></script>
+<script src="face_list.js"></script>
 <script>
 const FACE_SCALE = 1.15;
+const FACES_DIR = 'faces/';
 
 const canvas = document.getElementById('faceCanvas');
 const ctx = canvas.getContext('2d');
@@ -406,21 +403,19 @@ function loadFace(filename) {
     const img = new Image();
     img.onload = () => { faceImgs[filename] = img; resolve(img); };
     img.onerror = () => resolve(null);
-    const b64 = FACE_DATA[filename];
-    img.src = b64 ? ('data:image/png;base64,' + b64) : '';
+    img.src = FACES_DIR + encodeURIComponent(filename);
   });
 }
 
 function buildGrid(filter = '') {
   idleGrid.innerHTML = '';
   const q = filter.trim().toLowerCase();
-  const list = FACE_FILES.filter(f => !q || displayName(f).toLowerCase().includes(q));
+  const list = (typeof FACE_FILES !== 'undefined' ? FACE_FILES : []).filter(f => !q || displayName(f).toLowerCase().includes(q));
   document.getElementById('faceCount').textContent = '(' + list.length + ')';
   list.forEach(name => {
     const img = document.createElement('img');
     img.className = 'face-thumb' + (name === selectedFace ? ' active' : '');
-    const b64 = FACE_DATA[name];
-    img.src = b64 ? ('data:image/png;base64,' + b64) : '';
+    img.src = FACES_DIR + encodeURIComponent(name);
     img.title = displayName(name);
     img.loading = 'lazy';
     img.onclick = async () => {
@@ -440,7 +435,7 @@ faceSearch.oninput = () => buildGrid(faceSearch.value);
 
 (async () => {
   buildGrid();
-  if (FACE_FILES.length) {
+  if (typeof FACE_FILES !== 'undefined' && FACE_FILES.length) {
     selectedFace = FACE_FILES[0];
     idleImg = await loadFace(selectedFace);
     drawFace(0);
@@ -703,7 +698,7 @@ function drawVis(dataArr) {
 exportVidBtn.onclick = async () => {
   if ((!audioBuffer && !useMediaElement) || isExporting) return;
   if (!audioBuffer && useMediaElement) {
-    statusEl.textContent = 'For TikTok/video files, Play works! Export Video needs convert to mp3, or try Play + screen record.';
+    statusEl.textContent = 'For TikTok/video files, Play works! Export Video needs convert to mp3.';
     return;
   }
   setExportingUI(true);
@@ -743,7 +738,7 @@ exportVidBtn.onclick = async () => {
 exportGifBtn.onclick = async () => {
   if ((!audioBuffer && !useMediaElement) || isExporting) return;
   if (!audioBuffer && useMediaElement) {
-    statusEl.textContent = 'GIF export needs decoded audio — Play still works for TikTok videos!';
+    statusEl.textContent = 'GIF export needs decoded audio — Play still works!';
     return;
   }
   if (typeof GIF === 'undefined') { statusEl.textContent = 'GIF library needs internet once.'; return; }
@@ -754,11 +749,6 @@ exportGifBtn.onclick = async () => {
     fps = 10;
     fpsSlider.value = 10;
     fpsNum.value = 10;
-    statusEl.textContent = 'Long clip detected — using 10 FPS for GIF stability...';
-  }
-  if (dur > 45) {
-    statusEl.textContent = 'Clip is very long (' + dur.toFixed(0) + 's). GIF may fail — try Export Video instead!';
-    await new Promise(r => setTimeout(r, 1500));
   }
 
   setExportingUI(true);
@@ -817,13 +807,12 @@ exportGifBtn.onclick = async () => {
       drawFace(levels[frameIdx]);
       gif.addFrame(canvas, { delay: frameDelay, copy: true });
     }
-    const pct = 40 + (frameIdx / totalFrames) * 40;
-    progressFill.style.width = pct + '%';
+    progressFill.style.width = (40 + (frameIdx / totalFrames) * 40) + '%';
     statusEl.textContent = 'Drawing frames ' + frameIdx + '/' + totalFrames;
     if (frameIdx < totalFrames) {
       setTimeout(addNextBatch, 0);
     } else {
-      statusEl.textContent = 'Encoding GIF (this can take a bit for long clips)...';
+      statusEl.textContent = 'Encoding GIF...';
       gif.on('finished', (blob) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -836,14 +825,9 @@ exportGifBtn.onclick = async () => {
         currentLevel = 0;
         drawFace(0);
       });
-      gif.on('progress', (p) => {
-        progressFill.style.width = (80 + p * 20) + '%';
-      });
-      try {
-        gif.render();
-      } catch (err) {
+      gif.on('progress', (p) => { progressFill.style.width = (80 + p * 20) + '%'; });
+      try { gif.render(); } catch (err) {
         statusEl.textContent = 'GIF encode failed — try Export Video or lower FPS';
-        console.error(err);
         setExportingUI(false);
       }
     }
