@@ -121,16 +121,17 @@ function drawFace(mouthLevel) {
   const frames = mouthImgs;
   if (frames.length) {
     let idx = 0;
-    const talking = (isPlaying || isExporting) && mouthLevel > 0.04;
+    const talking = (isPlaying || isExporting) && mouthLevel > 0.03;
     if (talking && frames.length > 1) {
       const openCount = frames.length - 1;
-      const openIdx = Math.max(0, Math.min(openCount - 1, Math.round(mouthLevel * (openCount - 1))));
+      const curved = Math.pow(Math.min(1, mouthLevel), 0.65);
+      const openIdx = Math.max(0, Math.min(openCount - 1, Math.round(curved * (openCount - 1))));
       const target = 1 + openIdx;
-      smoothMouthIdx += (target - smoothMouthIdx) * 0.7;
+      smoothMouthIdx += (target - smoothMouthIdx) * 0.85;
       idx = Math.max(1, Math.min(frames.length - 1, Math.round(smoothMouthIdx)));
     } else {
-      smoothMouthIdx *= 0.4;
-      idx = smoothMouthIdx < 0.5 ? 0 : Math.max(0, Math.round(smoothMouthIdx));
+      smoothMouthIdx *= 0.25;
+      idx = 0;
     }
     const mouth = frames[idx];
     if (mouth && mouth.complete && mouth.naturalWidth) {
@@ -306,10 +307,16 @@ function animate() {
   if ((!isPlaying && !isExporting) || !analyser) return;
   const dataArr = new Uint8Array(analyser.frequencyBinCount);
   analyser.getByteFrequencyData(dataArr);
-  let sum = 0;
-  const start = 2, end = Math.min(36, dataArr.length);
-  for (let i = start; i < end; i++) sum += dataArr[i];
-  let level = Math.min(1, ((sum / (end - start)) / 255) * parseFloat(sensSlider.value));
+  let sum = 0, peak = 0;
+  const start = 1, end = Math.min(48, dataArr.length);
+  for (let i = start; i < end; i++) {
+    const v = dataArr[i];
+    sum += v;
+    if (v > peak) peak = v;
+  }
+  const avg = sum / (end - start) / 255;
+  const pk = peak / 255;
+  let level = Math.min(1, (avg * 0.55 + pk * 0.45) * parseFloat(sensSlider.value));
   const smooth = parseFloat(smoothSlider.value);
   currentLevel = currentLevel * smooth + level * (1 - smooth);
   drawFace(currentLevel);
