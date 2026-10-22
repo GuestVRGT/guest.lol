@@ -334,9 +334,9 @@
       </div>
       <div class="slider-group">
         <label><span>Smoothing</span>
-          <input type="number" id="smoothNum" min="0" max="0.95" step="0.00001" value="0.4" class="num-input">
+          <input type="number" id="smoothNum" min="0" max="0.95" step="0.00001" value="0.65" class="num-input">
         </label>
-        <input type="range" id="smooth" min="0" max="0.95" step="0.01" value="0.4">
+        <input type="range" id="smooth" min="0" max="0.95" step="0.01" value="0.65">
       </div>
       <div class="slider-group">
         <label><span>Mouth Size</span>
@@ -358,17 +358,18 @@
 <script src="mouths-data.js"></script>
 <script>
 const FACE_SCALE = 1.15;
-// Preload original GT mouth frames (Default set)
+// Mouth frames (eyes ripped off) — fewer frames = smoother, slower lipsync
 const mouthImgs = (typeof MOUTH_FRAMES !== 'undefined' ? MOUTH_FRAMES : []).map(src => {
   const img = new Image();
   img.src = src;
   return img;
 });
-// Try same-origin zip first, then GitHub raw
 const ZIP_URLS = [
   'guest-zip-faces-lipsync.zip',
+  'guest-eyes-mouths-lipsync.zip',
   'https://raw.githubusercontent.com/GuestVRGT/guest.lol/main/guest-zip-faces-lipsync.zip'
 ];
+const FACES_DIR = 'faces/';
 
 const canvas = document.getElementById('faceCanvas');
 const ctx = canvas.getContext('2d');
@@ -411,17 +412,21 @@ function displayName(filename) {
   return filename.replace(/\.png$/i, '');
 }
 
+function faceUrl(filename) {
+  if (FACE_DATA[filename]) return FACE_DATA[filename];
+  return FACES_DIR + encodeURIComponent(filename);
+}
+
 function loadFace(filename) {
   return new Promise((resolve) => {
-    if (faceImgs[filename] && faceImgs[filename].complete) {
+    if (faceImgs[filename] && faceImgs[filename].complete && faceImgs[filename].naturalWidth) {
       resolve(faceImgs[filename]);
       return;
     }
     const img = new Image();
     img.onload = () => { faceImgs[filename] = img; resolve(img); };
     img.onerror = () => resolve(null);
-    const url = FACE_DATA[filename];
-    img.src = url || '';
+    img.src = faceUrl(filename);
   });
 }
 
@@ -433,7 +438,7 @@ function buildGrid(filter = '') {
   list.forEach(name => {
     const img = document.createElement('img');
     img.className = 'face-thumb' + (name === selectedFace ? ' active' : '');
-    img.src = FACE_DATA[name] || '';
+    img.src = faceUrl(name);
     img.title = displayName(name);
     img.loading = 'lazy';
     img.onclick = async () => {
@@ -451,8 +456,47 @@ function buildGrid(filter = '') {
 
 faceSearch.oninput = () => buildGrid(faceSearch.value);
 
+async function tryLoadFromFolder() {
+  // Local faces/ folder (works when you unzip the package)
+  if (typeof FACE_FILES !== 'undefined' && Array.isArray(FACE_FILES) && FACE_FILES.length) {
+    return FACE_FILES.slice();
+  }
+  // Try face_list.js style
+  try {
+    const res = await fetch('face_list.js');
+    if (res.ok) {
+      const text = await res.text();
+      // eval-safe extract: FACE_FILES = [...]
+      const m = text.match(/FACE_FILES\s*=\s*(\[[\s\S]*?\])/);
+      if (m) {
+        const arr = JSON.parse(m[1].replace(/'/g, '"'));
+        if (Array.isArray(arr) && arr.length) return arr;
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
 async function loadFacesFromZip() {
-  statusEl.textContent = 'Loading faces from zip...';
+  statusEl.textContent = 'Loading faces...';
+
+  // 1) Prefer local faces/ folder
+  const folderList = await tryLoadFromFolder();
+  if (folderList && folderList.length) {
+    FACE_FILES = folderList.sort();
+    FACE_DATA = {}; // use faces/ paths
+    statusEl.textContent = 'Loaded ' + FACE_FILES.length + ' eye faces from folder!';
+    buildGrid();
+    selectedFace = FACE_FILES.includes('smile.png') ? 'smile.png' : FACE_FILES[0];
+    idleImg = await loadFace(selectedFace);
+    drawFace(0);
+    idleGrid.querySelectorAll('.face-thumb').forEach(t => {
+      if (t.title === displayName(selectedFace)) t.classList.add('active');
+    });
+    return;
+  }
+
+  // 2) Fall back to zip
   let lastErr = null;
   for (const url of ZIP_URLS) {
     try {
@@ -465,14 +509,12 @@ async function loadFacesFromZip() {
       const jobs = [];
       zip.forEach((path, file) => {
         if (file.dir) return;
-        // accept faces/xxx.png or just xxx.png
         const base = path.split('/').pop();
         if (!base || !base.toLowerCase().endsWith('.png')) return;
         if (path.includes('__MACOSX')) return;
         jobs.push(
           file.async('blob').then(blob => {
-            const objUrl = URL.createObjectURL(blob);
-            data[base] = objUrl;
+            data[base] = URL.createObjectURL(blob);
             names.push(base);
           })
         );
@@ -486,8 +528,7 @@ async function loadFacesFromZip() {
         selectedFace = FACE_FILES.includes('smile.png') ? 'smile.png' : FACE_FILES[0];
         idleImg = await loadFace(selectedFace);
         drawFace(0);
-        const thumbs = idleGrid.querySelectorAll('.face-thumb');
-        thumbs.forEach(t => {
+        idleGrid.querySelectorAll('.face-thumb').forEach(t => {
           if (t.title === displayName(selectedFace)) t.classList.add('active');
         });
       }
@@ -497,10 +538,13 @@ async function loadFacesFromZip() {
       console.warn('zip load failed for', url, e);
     }
   }
-  statusEl.textContent = 'Could not load faces zip — ' + (lastErr && lastErr.message);
+  statusEl.textContent = 'Could not load faces — put faces/ next to this page or the zip';
 }
 
 loadFacesFromZip();
+
+// Smoothed mouth index so it doesn't flicker wildly
+let smoothMouthIdx = 0;
 
 function drawFace(mouthLevel) {
   const size = canvas.width;
@@ -512,28 +556,28 @@ function drawFace(mouthLevel) {
   const y = Math.floor((size - faceSize) / 2);
   ctx.imageSmoothingEnabled = false;
 
-  // 1) Eyes only from the selected zip face (top half)
-  const eyeRatio = 0.52;
+  // 1) Full selected face first → eyes always visible
   if (idleImg && idleImg.complete && idleImg.naturalWidth) {
-    const srcW = idleImg.naturalWidth;
-    const srcH = idleImg.naturalHeight;
-    const srcEyeH = Math.floor(srcH * eyeRatio);
-    const eyeH = Math.floor(faceSize * eyeRatio);
-    ctx.drawImage(idleImg, 0, 0, srcW, srcEyeH, x, y, faceSize, eyeH);
+    ctx.drawImage(idleImg, x, y, faceSize, faceSize);
   }
 
-  // 2) Mouth from other zip faces with eyes ripped off (transparent top)
+  // 2) Overlay separate mouth layer (eyes ripped → transparent top)
   const frames = mouthImgs;
   if (frames.length) {
-    let idx;
+    // Only use a few steps so it doesn't thrash
+    const steps = Math.min(frames.length, 6);
+    let target;
     if (isPlaying || isExporting) {
-      idx = Math.max(0, Math.min(frames.length - 1, Math.round(mouthLevel * (frames.length - 1))));
+      // map level → step, then ease toward it
+      target = Math.max(0, Math.min(steps - 1, Math.round(mouthLevel * (steps - 1))));
     } else {
-      idx = 0;
+      target = 0;
     }
+    // slow the change (lower = slower)
+    smoothMouthIdx += (target - smoothMouthIdx) * 0.18;
+    const idx = Math.max(0, Math.min(frames.length - 1, Math.round(smoothMouthIdx * (frames.length - 1) / Math.max(1, steps - 1))));
     const mouth = frames[idx];
     if (mouth && mouth.complete && mouth.naturalWidth) {
-      // full frame — eyes area is transparent, only mouth shows
       ctx.drawImage(mouth, x, y, faceSize, faceSize);
     }
   }
