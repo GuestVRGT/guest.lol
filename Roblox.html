@@ -68,9 +68,7 @@
     position: relative;
     overflow: hidden;
   }
-  .panel::before {
-    display: none;
-  }
+  .panel::before { display: none; }
   .preview-panel {
     display: flex;
     flex-direction: column;
@@ -116,8 +114,6 @@
     border: 1px solid rgba(255,255,255,0.12);
     transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
     font-family: inherit;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
   }
   label.file-btn {
     background: linear-gradient(135deg, #c084fc, #7c3aed);
@@ -296,36 +292,30 @@
 <body>
   <h1>guest.lol</h1>
   <p class="subtitle">Separated eyes + mouths · white theme</p>
-  
   <div class="layout">
     <div class="panel preview-panel">
       <div id="stage"><canvas id="faceCanvas" width="256" height="256"></canvas></div>
       <div class="vis"><canvas id="visCanvas"></canvas></div>
       <div id="progressBar"><div id="progressFill"></div></div>
       <p id="status">Pick eyes & load audio!</p>
-      <p class="hint">Eyes = top of selected face · Mouths = separate layer (auto lipsync)</p>
+      <p class="hint">Eyes only · closed mouth when quiet · open mouths when talking</p>
     </div>
-    
     <div class="panel controls-panel">
       <div>
         <div class="section-title">Eyes <span id="faceCount"></span></div>
         <input type="text" class="search-box" id="faceSearch" placeholder="Search eyes...">
         <div class="face-grid" id="idleGrid" style="margin-top:8px;"></div>
       </div>
-      
       <label class="file-btn" for="audioInput">📁 Choose Audio / Video</label>
       <input type="file" id="audioInput" accept="audio/*,video/*,.mp4,.webm,.mov,.m4a,.ogg">
-      
       <div class="btn-row">
         <button class="action" id="playBtn" disabled>▶ Play</button>
         <button class="action" id="stopBtn">⏹ Stop</button>
       </div>
-      
       <div class="export-row">
         <button class="action" id="exportGifBtn" disabled>🖼 Export GIF</button>
         <button class="action" id="exportVidBtn" disabled>🎬 Export Video</button>
       </div>
-      
       <div class="slider-group">
         <label><span>Sensitivity</span>
           <input type="number" id="sensNum" min="0.1" max="10" step="0.00001" value="1.5" class="num-input">
@@ -353,7 +343,6 @@
     </div>
   </div>
   <footer>guest.lol · faces from Archive.zip</footer>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="face_list.js"></script>
 <script src="mouths-data.js"></script>
@@ -365,7 +354,6 @@ const mouthImgs = (typeof MOUTH_FRAMES !== 'undefined' ? MOUTH_FRAMES : []).map(
   return img;
 });
 const FACES_DIR = 'faces/';
-
 const canvas = document.getElementById('faceCanvas');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
@@ -385,7 +373,6 @@ const smoothSlider = document.getElementById('smooth');
 const fpsSlider = document.getElementById('gifFps');
 const mouthSlider = document.getElementById('mouthSize');
 const faceSearch = document.getElementById('faceSearch');
-
 let selectedFace = null;
 let idleImg = new Image();
 let isPlaying = false;
@@ -398,20 +385,15 @@ let recordedChunks = [];
 let mediaElement = null;
 let mediaObjectUrl = null;
 let useMediaElement = false;
-
 const faceImgs = {};
 let FACE_DATA = {};
-// FACE_FILES comes from face_list.js
-
 function displayName(filename) {
   return filename.replace(/\.png$/i, '');
 }
-
 function faceUrl(filename) {
   if (FACE_DATA[filename]) return FACE_DATA[filename];
   return FACES_DIR + encodeURIComponent(filename);
 }
-
 function loadFace(filename) {
   return new Promise((resolve) => {
     if (faceImgs[filename] && faceImgs[filename].complete && faceImgs[filename].naturalWidth) {
@@ -424,7 +406,6 @@ function loadFace(filename) {
     img.src = faceUrl(filename);
   });
 }
-
 function buildGrid(filter = '') {
   idleGrid.innerHTML = '';
   const q = filter.trim().toLowerCase();
@@ -448,9 +429,7 @@ function buildGrid(filter = '') {
     idleGrid.appendChild(img);
   });
 }
-
 faceSearch.oninput = () => buildGrid(faceSearch.value);
-
 async function loadFaces() {
   statusEl.textContent = 'Loading faces...';
   const list = (typeof FACE_FILES !== 'undefined' && Array.isArray(FACE_FILES)) ? FACE_FILES.slice() : [];
@@ -469,11 +448,8 @@ async function loadFaces() {
     if (t.title === displayName(selectedFace)) t.classList.add('active');
   });
 }
-
 loadFaces();
-
 let smoothMouthIdx = 0;
-
 function drawFace(mouthLevel) {
   const size = canvas.width;
   ctx.clearRect(0, 0, size, size);
@@ -483,35 +459,39 @@ function drawFace(mouthLevel) {
   const x = Math.floor((size - faceSize) / 2);
   const y = Math.floor((size - faceSize) / 2);
   ctx.imageSmoothingEnabled = false;
-
+  const eyeRatio = 0.52;
   if (idleImg && idleImg.complete && idleImg.naturalWidth) {
-    ctx.drawImage(idleImg, x, y, faceSize, faceSize);
+    const srcW = idleImg.naturalWidth;
+    const srcH = idleImg.naturalHeight;
+    const srcEyeH = Math.floor(srcH * eyeRatio);
+    const eyeH = Math.floor(faceSize * eyeRatio);
+    ctx.drawImage(idleImg, 0, 0, srcW, srcEyeH, x, y, faceSize, eyeH);
   }
-
   const frames = mouthImgs;
   if (frames.length) {
-    const steps = Math.min(frames.length, 6);
-    let target;
-    if (isPlaying || isExporting) {
-      target = Math.max(0, Math.min(steps - 1, Math.round(mouthLevel * (steps - 1))));
+    let idx = 0;
+    const talking = (isPlaying || isExporting) && mouthLevel > 0.08;
+    if (talking && frames.length > 1) {
+      const openCount = frames.length - 1;
+      const openIdx = Math.max(0, Math.min(openCount - 1, Math.round(mouthLevel * (openCount - 1))));
+      const target = 1 + openIdx;
+      smoothMouthIdx += (target - smoothMouthIdx) * 0.22;
+      idx = Math.max(1, Math.min(frames.length - 1, Math.round(smoothMouthIdx)));
     } else {
-      target = 0;
+      smoothMouthIdx += (0 - smoothMouthIdx) * 0.25;
+      idx = 0;
     }
-    smoothMouthIdx += (target - smoothMouthIdx) * 0.18;
-    const idx = Math.max(0, Math.min(frames.length - 1, Math.round(smoothMouthIdx * (frames.length - 1) / Math.max(1, steps - 1))));
     const mouth = frames[idx];
     if (mouth && mouth.complete && mouth.naturalWidth) {
       ctx.drawImage(mouth, x, y, faceSize, faceSize);
     }
   }
-
   const grad = ctx.createRadialGradient(size/2, size/2, size*0.28, size/2, size/2, size*0.72);
   grad.addColorStop(0, 'rgba(0,0,0,0)');
   grad.addColorStop(1, 'rgba(0,0,0,0.18)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, size, size);
 }
-
 function setExportingUI(on) {
   isExporting = on;
   const hasMedia = !!(audioBuffer || useMediaElement);
@@ -521,12 +501,10 @@ function setExportingUI(on) {
   progressBar.style.display = on ? 'block' : 'none';
   if (!on) progressFill.style.width = '0%';
 }
-
 const sensNum = document.getElementById('sensNum');
 const smoothNum = document.getElementById('smoothNum');
 const fpsNum = document.getElementById('fpsNum');
 const mouthNum = document.getElementById('mouthNum');
-
 function syncSens(fromSlider) {
   if (fromSlider) sensNum.value = sensSlider.value;
   else {
@@ -567,7 +545,6 @@ function syncMouth(fromSlider) {
     mouthSlider.value = v;
   }
 }
-
 sensSlider.oninput = () => syncSens(true);
 smoothSlider.oninput = () => syncSmooth(true);
 fpsSlider.oninput = () => syncFps(true);
@@ -576,7 +553,6 @@ sensNum.onchange = sensNum.oninput = () => syncSens(false);
 smoothNum.onchange = smoothNum.oninput = () => syncSmooth(false);
 fpsNum.onchange = fpsNum.oninput = () => syncFps(false);
 mouthNum.onchange = mouthNum.oninput = () => syncMouth(false);
-
 audioInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -586,35 +562,28 @@ audioInput.addEventListener('change', async (e) => {
   useMediaElement = false;
   if (mediaObjectUrl) { URL.revokeObjectURL(mediaObjectUrl); mediaObjectUrl = null; }
   if (mediaElement) { mediaElement.pause(); mediaElement.src = ''; mediaElement = null; }
-
   try {
     if (audioCtx) { try { await audioCtx.close(); } catch(_){} }
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const ab = await file.arrayBuffer();
-
     try {
       audioBuffer = await audioCtx.decodeAudioData(ab.slice(0));
       useMediaElement = false;
       statusEl.textContent = 'Ready: ' + file.name + ' (' + audioBuffer.duration.toFixed(1) + 's)';
       playBtn.disabled = false; exportGifBtn.disabled = false; exportVidBtn.disabled = false;
       return;
-    } catch (decodeErr) {
-      console.warn('decodeAudioData failed', decodeErr);
-    }
-
+    } catch (decodeErr) { console.warn('decodeAudioData failed', decodeErr); }
     mediaObjectUrl = URL.createObjectURL(file);
     const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov)$/i.test(file.name);
     mediaElement = document.createElement(isVideo ? 'video' : 'audio');
     mediaElement.preload = 'auto';
     mediaElement.src = mediaObjectUrl;
     mediaElement.crossOrigin = 'anonymous';
-
     await new Promise((resolve, reject) => {
       mediaElement.onloadedmetadata = () => resolve();
       mediaElement.onerror = () => reject(new Error('Could not load media'));
       setTimeout(() => reject(new Error('Media load timeout')), 15000);
     });
-
     useMediaElement = true;
     const dur = mediaElement.duration;
     if (!isFinite(dur) || dur <= 0) throw new Error('Unknown duration');
@@ -627,19 +596,16 @@ audioInput.addEventListener('change', async (e) => {
     console.error(err);
   }
 });
-
 playBtn.onclick = () => { if ((!audioBuffer && !useMediaElement) || isPlaying || isExporting) return; startPlay(); };
 stopBtn.onclick = () => {
   if (isExporting && mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
   stopPlay();
 };
-
 async function startPlay() {
   if (audioCtx.state === 'suspended') await audioCtx.resume();
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 256;
   analyser.smoothingTimeConstant = 0.35;
-
   if (useMediaElement && mediaElement) {
     const srcUrl = mediaElement.src;
     const tag = mediaElement.tagName;
@@ -675,7 +641,6 @@ async function startPlay() {
   statusEl.textContent = 'Lipsyncing... 🎤';
   animate();
 }
-
 function stopPlay() {
   if (source) { try { source.stop(); } catch(e){} source = null; }
   isPlaying = false;
@@ -686,7 +651,6 @@ function stopPlay() {
   }
   cancelAnimationFrame(animId);
 }
-
 function animate() {
   if ((!isPlaying && !isExporting) || !analyser) return;
   const dataArr = new Uint8Array(analyser.frequencyBinCount);
@@ -701,7 +665,6 @@ function animate() {
   if (!isExporting) drawVis(dataArr);
   animId = requestAnimationFrame(animate);
 }
-
 function drawVis(dataArr) {
   const dpr = devicePixelRatio || 1;
   visCanvas.width = visCanvas.offsetWidth * dpr;
@@ -718,7 +681,6 @@ function drawVis(dataArr) {
     visCtx.fillRect(i * barW + 1, h - bh, barW - 2, bh);
   }
 }
-
 exportVidBtn.onclick = async () => {
   if ((!audioBuffer && !useMediaElement) || isExporting) return;
   if (!audioBuffer) {
@@ -753,7 +715,6 @@ exportVidBtn.onclick = async () => {
   source.onended = () => setTimeout(() => { if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop(); }, 150);
   source.start(0); animate();
 };
-
 exportGifBtn.onclick = async () => {
   if (!audioBuffer || isExporting) return;
   if (typeof GIF === 'undefined') { statusEl.textContent = 'GIF library needs internet.'; return; }
@@ -821,7 +782,6 @@ exportGifBtn.onclick = async () => {
   }
   addNextBatch();
 };
-
 drawFace(0);
 </script>
 </body>
