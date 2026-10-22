@@ -295,21 +295,21 @@
 </head>
 <body>
   <h1>guest.lol</h1>
-  <p class="subtitle">Zip Faces Lipsync · white theme · embedded faces</p>
+  <p class="subtitle">Separated eyes + mouths · white theme</p>
   
   <div class="layout">
     <div class="panel preview-panel">
       <div id="stage"><canvas id="faceCanvas" width="256" height="256"></canvas></div>
       <div class="vis"><canvas id="visCanvas"></canvas></div>
       <div id="progressBar"><div id="progressFill"></div></div>
-      <p id="status">Pick a face & load audio!</p>
-      <p class="hint">Eyes from zip faces · mouths from original GT Default frames</p>
+      <p id="status">Pick eyes & load audio!</p>
+      <p class="hint">Eyes = top of selected face · Mouths = separate layer (auto lipsync)</p>
     </div>
     
     <div class="panel controls-panel">
       <div>
-        <div class="section-title">Face <span id="faceCount"></span></div>
-        <input type="text" class="search-box" id="faceSearch" placeholder="Search faces...">
+        <div class="section-title">Eyes <span id="faceCount"></span></div>
+        <input type="text" class="search-box" id="faceSearch" placeholder="Search eyes...">
         <div class="face-grid" id="idleGrid" style="margin-top:8px;"></div>
       </div>
       
@@ -443,7 +443,7 @@ function buildGrid(filter = '') {
       selectedFace = name;
       idleImg = await loadFace(name);
       if (!isPlaying) drawFace(0);
-      statusEl.textContent = 'Face: ' + displayName(name);
+      statusEl.textContent = 'Eyes: ' + displayName(name);
     };
     idleGrid.appendChild(img);
   });
@@ -480,7 +480,7 @@ async function loadFacesFromZip() {
       await Promise.all(jobs);
       FACE_DATA = data;
       FACE_FILES = names.sort();
-      statusEl.textContent = 'Loaded ' + FACE_FILES.length + ' faces! Pick one & load audio';
+      statusEl.textContent = 'Loaded ' + FACE_FILES.length + ' eye faces! Pick eyes & load audio';
       buildGrid();
       if (FACE_FILES.length) {
         selectedFace = FACE_FILES.includes('smile.png') ? 'smile.png' : FACE_FILES[0];
@@ -512,47 +512,29 @@ function drawFace(mouthLevel) {
   const y = Math.floor((size - faceSize) / 2);
   ctx.imageSmoothingEnabled = false;
 
-  // Eye split: upper part of zip face = eyes only
-  const eyeRatio = 0.58; // top 58% = eyes region
-  const eyeH = Math.floor(faceSize * eyeRatio);
-  const mouthH = faceSize - eyeH;
-
+  // 1) Eyes only from the selected zip face (top half)
+  const eyeRatio = 0.52;
   if (idleImg && idleImg.complete && idleImg.naturalWidth) {
-    // draw only the top (eyes) portion of the selected zip face
     const srcW = idleImg.naturalWidth;
     const srcH = idleImg.naturalHeight;
     const srcEyeH = Math.floor(srcH * eyeRatio);
-    ctx.drawImage(
-      idleImg,
-      0, 0, srcW, srcEyeH,           // source: top of face
-      x, y, faceSize, eyeH           // dest: top of canvas face area
-    );
+    const eyeH = Math.floor(faceSize * eyeRatio);
+    ctx.drawImage(idleImg, 0, 0, srcW, srcEyeH, x, y, faceSize, eyeH);
   }
 
-  // Mouth from original GT Default talking frames
+  // 2) Mouth from other zip faces with eyes ripped off (transparent top)
   const frames = mouthImgs;
   if (frames.length) {
-    // map volume -> frame index (0 = closed-ish, higher = more open)
-    // original set: index 0 often closed, higher numbers more open — reverse if needed
     let idx;
     if (isPlaying || isExporting) {
-      // match original guest.lol: higher volume → lower frame index
-      idx = Math.max(0, Math.min(frames.length - 1, Math.round((1 - mouthLevel) * (frames.length - 1))));
+      idx = Math.max(0, Math.min(frames.length - 1, Math.round(mouthLevel * (frames.length - 1))));
     } else {
-      idx = frames.length - 1; // idle: most closed
+      idx = 0;
     }
     const mouth = frames[idx];
     if (mouth && mouth.complete && mouth.naturalWidth) {
-      const mw = mouth.naturalWidth;
-      const mh = mouth.naturalHeight;
-      // take lower portion of the mouth frame and stretch to mouth area
-      const srcMouthY = Math.floor(mh * eyeRatio);
-      const srcMouthH = mh - srcMouthY;
-      ctx.drawImage(
-        mouth,
-        0, srcMouthY, mw, srcMouthH,     // source: bottom of GT mouth frame
-        x, y + eyeH, faceSize, mouthH    // dest: bottom of face area
-      );
+      // full frame — eyes area is transparent, only mouth shows
+      ctx.drawImage(mouth, x, y, faceSize, faceSize);
     }
   }
 
