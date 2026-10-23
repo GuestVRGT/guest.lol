@@ -1,38 +1,77 @@
 const FACE_SCALE = 1.0;
 let mouthImgs = [];
-let currentMouthSet = 'roblox';
+let currentMouthSet = 'faces';
+
+// Mouths come from faces/ — crop bottom half of these files (must exist in FACE_FILES)
+const MOUTH_CLOSED = ['Alright.png', 'Optimist.png', 'Winning Smile.png', 'Stare.png', 'Friendly Smile.png'];
+const MOUTH_OPEN = [
+  'Aghast.png', 'Disbelief.png', 'Disbelief Face.png', 'ROAR!!!.png', 'Fang.png',
+  'XD 2.0.png', 'XD.png', 'Uh Oh.png', 'Joyous Surprise.png', 'Drool.png',
+  'Grr!.png', 'Shocked.png', 'Yawn.png', 'Laughing Fun.png'
+];
+
+function cropMouthFromFace(img) {
+  const w = img.naturalWidth || img.width;
+  const h = img.naturalHeight || img.height;
+  const split = Math.floor(h * 0.48);
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const cctx = c.getContext('2d');
+  cctx.imageSmoothingEnabled = false;
+  cctx.clearRect(0, 0, w, h);
+  cctx.drawImage(img, 0, split, w, h - split, 0, split, w, h - split);
+  return c;
+}
+
+async function loadMouthsFromFaces() {
+  const list = (typeof FACE_FILES !== 'undefined' && Array.isArray(FACE_FILES)) ? FACE_FILES : [];
+  const closed = MOUTH_CLOSED.filter(n => list.includes(n));
+  const open = MOUTH_OPEN.filter(n => list.includes(n));
+  const closedSrc = closed.length ? closed : list.slice(0, 1);
+  const openSrc = open.length ? open : list.slice(1, 6);
+  const names = [...closedSrc.slice(0, 1), ...openSrc];
+  const unique = [...new Set(names)];
+
+  if (statusEl) statusEl.textContent = 'Loading mouths from faces/...';
+  const loaded = [];
+  for (const name of unique) {
+    const img = await loadFace(name);
+    if (!img) continue;
+    loaded.push(cropMouthFromFace(img));
+  }
+  if (!loaded.length && list.length) {
+    const img = await loadFace(list[0]);
+    if (img) loaded.push(cropMouthFromFace(img));
+  }
+  mouthImgs = loaded;
+  buildMouthGrid();
+  if (typeof drawFace === 'function') drawFace(0);
+  if (statusEl) statusEl.textContent = 'Mouths from faces/ (' + mouthImgs.length + ' frames)';
+}
 
 function loadMouthSet(key) {
-  const sets = (typeof MOUTH_SETS !== 'undefined') ? MOUTH_SETS : {};
-  const set = sets[key] || Object.values(sets)[0] || { frames: [] };
   currentMouthSet = key;
-  mouthImgs = (set.frames || []).map(src => { const img = new Image(); img.src = src; return img; });
-  const grid = document.getElementById('mouthGrid');
-  if (grid) grid.querySelectorAll('.mouth-thumb').forEach(t => t.classList.toggle('active', t.dataset.key === key));
   if (typeof drawFace === 'function') drawFace(0);
 }
 
 function buildMouthGrid() {
   const grid = document.getElementById('mouthGrid');
-  if (!grid || typeof MOUTH_SETS === 'undefined') return;
+  if (!grid) return;
   grid.innerHTML = '';
-  Object.keys(MOUTH_SETS).forEach(key => {
-    const set = MOUTH_SETS[key];
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'mouth-thumb' + (key === currentMouthSet ? ' active' : '');
-    btn.dataset.key = key;
-    btn.title = set.name;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'mouth-thumb active';
+  btn.title = 'faces/ mouths';
+  if (mouthImgs[0]) {
     const preview = document.createElement('img');
-    const frames = set.frames || [];
-    preview.src = frames[0] || '';
+    preview.src = mouthImgs[0].toDataURL ? mouthImgs[0].toDataURL() : (mouthImgs[0].src || '');
     btn.appendChild(preview);
-    const label = document.createElement('span');
-    label.textContent = set.name;
-    btn.appendChild(label);
-    btn.onclick = () => loadMouthSet(key);
-    grid.appendChild(btn);
-  });
+  }
+  const label = document.createElement('span');
+  label.textContent = 'faces/';
+  btn.appendChild(label);
+  grid.appendChild(btn);
 }
 
 const canvas = document.getElementById('faceCanvas');
@@ -139,6 +178,7 @@ async function loadFaces() {
   buildGrid();
   useSimpleEyes = true;
   drawFace(0);
+  await loadMouthsFromFaces();
 }
 loadFaces();
 
@@ -205,13 +245,15 @@ function drawFace(mouthLevel) {
       idx = smoothMouthIdx < 0.5 ? 0 : Math.max(0, Math.round(smoothMouthIdx));
     }
     const mouth = frames[idx];
-    if (mouth && mouth.complete && mouth.naturalWidth) {
+    const mw = mouth && (mouth.naturalWidth || mouth.width);
+    const mh = mouth && (mouth.naturalHeight || mouth.height);
+    if (mouth && mw) {
       const mouthSize = faceSize;
       const mx = Math.floor((size - mouthSize) / 2);
       const my = Math.floor(size * 0.28);
       const off = document.createElement('canvas');
-      off.width = mouth.naturalWidth;
-      off.height = mouth.naturalHeight;
+      off.width = mw;
+      off.height = mh;
       const octx = off.getContext('2d');
       octx.imageSmoothingEnabled = false;
       octx.drawImage(mouth, 0, 0);
@@ -436,6 +478,4 @@ exportVidBtn.onclick = async () => {
   source.start(0); animate();
 };
 
-loadMouthSet(currentMouthSet);
-buildMouthGrid();
 drawFace(0);
