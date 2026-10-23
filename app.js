@@ -1,5 +1,5 @@
 window.FACE_FILES=[];
-const DEFAULT_EYES_SRC="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAAy0lEQVR42u3bMQ6AIBAEQDH+/8tYWdkqsMfMBzxwOUjE4wAAAAAAAAAAAAAAAAAAAAAAAADW0hKL7r3310Baa7vV8IUr/cWvWF9SEE5NcG9XlYGMWn2rd6GyHSBp4pNqLbcF/Dn51Va/MwACIAAIAAKAACAACAACgAAgAAgAAhDnz8/BiTd+dAAEgAIBSGq/SbWWuRI2atKf51S5HGIL2FyJ/wJmtdxV6gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYKIbLqc0My37ToYAAAAASUVORK5CYII=";
+const DEFAULT_EYES_SRC="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAYCAYAAAC+Ot5rAAAAqklEQVR42u2UQQ6EIAxF2Yz3v7JZd4YZS1sE2nZn/sYQHtoPihBCFOI0rY6q+kSHdZ+R1pTQNqV6eCRtrERn/1qKbSPp6GWy0lm6UnR1pN7WQo79K3H0hZTj/UgcfSHF7Tj6QkrKcX6Ro6+k5BgZJ0d/kZL/zNFfQqTiR6rF4+hvITL/Udrj8VXv6DchMv/ztv9QZ4/kI0u/CZH5j/a9s+x3yD1c9tRPiMx/vL3P6Oht+SFE5v/Y7t/Z0R9CZP7j7f2GOvoL+QIZjQ1nl2eCuwAAAABJRU5ErkJggg==";
 let defaultEyesImg=new Image();
 defaultEyesImg.onload=function(){if(typeof drawFace==="function")drawFace(0);};
 defaultEyesImg.src=DEFAULT_EYES_SRC;
@@ -111,10 +111,10 @@ function drawFace(mouthLevel){
   const y=Math.floor((size-faceSize)/2);
   ctx.imageSmoothingEnabled=false;
   if(defaultEyesImg.complete&&defaultEyesImg.naturalWidth){
-    const eyeW=Math.floor(faceSize*0.85);
+    const eyeW=Math.floor(faceSize*0.50);
     const eyeH=Math.floor(eyeW*(defaultEyesImg.naturalHeight/defaultEyesImg.naturalWidth));
     const eyeX0=Math.floor((size-eyeW)/2);
-    const eyeY0=y+Math.floor(faceSize*0.08);
+    const eyeY0=Math.floor(size*0.22);
     drawTinted(defaultEyesImg, eyeX0, eyeY0, eyeW, eyeH);
   } else {
     const cx=size/2, eyeY=size*0.38, r=Math.max(6, faceSize*0.09);
@@ -131,10 +131,10 @@ function drawFace(mouthLevel){
     const idx=Math.min(n-1,Math.max(0,Math.round(smoothMouthIdx)));
     const mImg=frames[idx];
     if(mImg&&mImg.complete&&mImg.naturalWidth){
-      const mw=Math.floor(faceSize*0.72);
+      const mw=Math.floor(faceSize*0.55);
       const mh=Math.floor(mw*(mImg.naturalHeight/mImg.naturalWidth));
       const mx=Math.floor((size-mw)/2);
-      const my=Math.floor(size*0.46);
+      const my=Math.floor(size*0.52);
       drawTinted(mImg, mx, my, mw, mh);
     }
   }
