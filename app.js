@@ -1,5 +1,5 @@
 window.FACE_FILES=[];
-const DEFAULT_EYES_SRC="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAYCAYAAAC+Ot5rAAAAqklEQVR42u2UQQ6EIAxF2Yz3v7JZd4YZS1sE2nZn/sYQHtoPihBCFOI0rY6q+kSHdZ+R1pTQNqV6eCRtrERn/1qKbSPp6GWy0lm6UnR1pN7WQo79K3H0hZTj/UgcfSHF7Tj6QkrKcX6Ro6+k5BgZJ0d/kZL/zNFfQqTiR6rF4+hvITL/Udrj8VXv6DchMv/ztv9QZ4/kI0u/CZH5j/a9s+x3yD1c9tRPiMx/vL3P6Oht+SFE5v/Y7t/Z0R9CZP7j7f2GOvoL+QIZjQ1nl2eCuwAAAABJRU5ErkJggg==";
+const DEFAULT_EYES_SRC="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACcAAAAYCAYAAAB5j+RNAAAAcElEQVR42u2VUQ7AIAhDpfe/M35vCQtqMYTRT5XyABPGaBWUWBeqqo+HIsJK6vWGJ9g6Y4B9eSMKggGNzH8Op9VFxiPDSK38dcbacA33Kzjm/txa9K/8dcZ62tnVeLABmOC41bUdH3gM2N2M9m+l1gT6yjAsl91C8AAAAABJRU5ErkJggg==";
 let defaultEyesImg=new Image();
 defaultEyesImg.onload=function(){if(typeof drawFace==="function")drawFace(0);};
 defaultEyesImg.src=DEFAULT_EYES_SRC;
@@ -108,7 +108,6 @@ function drawFace(mouthLevel){
   ctx.fillStyle=faceMode==="dark"?"#000000":"#ffffff";
   ctx.fillRect(0,0,size,size);
   const faceSize=Math.floor(size*0.92*FACE_SCALE);
-  const y=Math.floor((size-faceSize)/2);
   ctx.imageSmoothingEnabled=false;
   if(defaultEyesImg.complete&&defaultEyesImg.naturalWidth){
     const eyeW=Math.floor(faceSize*0.50);
@@ -117,10 +116,10 @@ function drawFace(mouthLevel){
     const eyeY0=Math.floor(size*0.22);
     drawTinted(defaultEyesImg, eyeX0, eyeY0, eyeW, eyeH);
   } else {
-    const cx=size/2, eyeY=size*0.38, r=Math.max(6, faceSize*0.09);
+    const cx=size/2, eyeY=size*0.30, r=Math.max(6, faceSize*0.08);
     ctx.fillStyle=faceMode==="dark"?"#ffffff":"#000000";
-    ctx.beginPath();ctx.arc(cx-faceSize*0.18,eyeY,r,0,Math.PI*2);ctx.fill();
-    ctx.beginPath();ctx.arc(cx+faceSize*0.18,eyeY,r,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(cx-faceSize*0.14,eyeY,r,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(cx+faceSize*0.14,eyeY,r,0,Math.PI*2);ctx.fill();
   }
   const frames=mouthImgs;
   if(frames.length){
