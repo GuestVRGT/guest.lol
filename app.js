@@ -1,6 +1,6 @@
-const FACE_SCALE = 1.15;
+const FACE_SCALE = 1.0;
 let mouthImgs = [];
-let currentMouthSet = (typeof DEFAULT_MOUTH_SET !== 'undefined') ? DEFAULT_MOUTH_SET : 'black-o';
+let currentMouthSet = 'pablo';
 
 function loadMouthSet(key) {
   const sets = (typeof MOUTH_SETS !== 'undefined') ? MOUTH_SETS : {};
@@ -25,7 +25,7 @@ function buildMouthGrid() {
     btn.title = set.name;
     const preview = document.createElement('img');
     const frames = set.frames || [];
-    preview.src = frames[Math.min(2, frames.length - 1)] || frames[0] || '';
+    preview.src = frames[0] || '';
     btn.appendChild(preview);
     const label = document.createElement('span');
     label.textContent = set.name;
@@ -35,7 +35,6 @@ function buildMouthGrid() {
   });
 }
 
-const FACES_DIR = 'faces/';
 const canvas = document.getElementById('faceCanvas');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
@@ -70,6 +69,8 @@ let useMediaElement = false;
 const faceImgs = {};
 let FACE_DATA = {};
 let smoothMouthIdx = 0;
+const FACES_DIR = 'faces/';
+let useSimpleEyes = true;
 
 function displayName(filename) { return filename.replace(/\.png$/i, ''); }
 function faceUrl(filename) {
@@ -88,18 +89,36 @@ function loadFace(filename) {
   });
 }
 function buildGrid(filter = '') {
+  if (!idleGrid) return;
   idleGrid.innerHTML = '';
   const q = filter.trim().toLowerCase();
   const list = (typeof FACE_FILES !== 'undefined' ? FACE_FILES : []).filter(f => !q || displayName(f).toLowerCase().includes(q));
-  document.getElementById('faceCount').textContent = '(' + list.length + ')';
+  const countEl = document.getElementById('faceCount');
+  if (countEl) countEl.textContent = '(' + list.length + ')';
+  const simple = document.createElement('button');
+  simple.type = 'button';
+  simple.className = 'face-thumb' + (useSimpleEyes ? ' active' : '');
+  simple.title = 'Simple dots';
+  simple.textContent = '\u2022\u2022';
+  simple.style.cssText = 'display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;background:#111;border:2px solid ' + (useSimpleEyes ? '#7c3aed' : 'transparent');
+  simple.onclick = () => {
+    useSimpleEyes = true;
+    selectedFace = null;
+    document.querySelectorAll('.face-thumb').forEach(t => t.classList.remove('active'));
+    simple.classList.add('active');
+    if (!isPlaying) drawFace(0);
+    statusEl.textContent = 'Eyes: simple dots';
+  };
+  idleGrid.appendChild(simple);
   list.forEach(name => {
     const img = document.createElement('img');
-    img.className = 'face-thumb' + (name === selectedFace ? ' active' : '');
+    img.className = 'face-thumb' + (!useSimpleEyes && name === selectedFace ? ' active' : '');
     img.src = faceUrl(name);
     img.title = displayName(name);
     img.loading = 'lazy';
     img.onclick = async () => {
       if (isExporting) return;
+      useSimpleEyes = false;
       document.querySelectorAll('.face-thumb').forEach(t => t.classList.remove('active'));
       img.classList.add('active');
       selectedFace = name;
@@ -110,38 +129,65 @@ function buildGrid(filter = '') {
     idleGrid.appendChild(img);
   });
 }
-faceSearch.oninput = () => buildGrid(faceSearch.value);
+if (faceSearch) faceSearch.oninput = () => buildGrid(faceSearch.value);
 
 async function loadFaces() {
-  statusEl.textContent = 'Loading faces...';
+  statusEl.textContent = 'Loading...';
   const list = (typeof FACE_FILES !== 'undefined' && Array.isArray(FACE_FILES)) ? FACE_FILES.slice() : [];
-  if (!list.length) { statusEl.textContent = 'No faces listed — check face_list.js'; return; }
   FACE_DATA = {};
-  statusEl.textContent = 'Loaded ' + list.length + ' faces from faces/';
+  statusEl.textContent = list.length ? ('Loaded ' + list.length + ' faces') : 'Simple eyes ready';
   buildGrid();
-  const prefer = ['Optimist.png', 'Awesome Face.png', 'smile.png', 'Winning Smile.png'];
-  selectedFace = prefer.find(p => list.includes(p)) || list[0];
-  idleImg = await loadFace(selectedFace);
+  useSimpleEyes = true;
   drawFace(0);
-  idleGrid.querySelectorAll('.face-thumb').forEach(t => {
-    if (t.title === displayName(selectedFace)) t.classList.add('active');
-  });
 }
 loadFaces();
+
+function drawSimpleEyes(cx, cy, faceSize) {
+  const r = Math.max(4, Math.floor(faceSize * 0.055));
+  const gap = faceSize * 0.14;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(cx - gap, cy, r, 0, Math.PI * 2);
+  ctx.arc(cx + gap, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+}
 
 function drawFace(mouthLevel) {
   const size = canvas.width;
   ctx.clearRect(0, 0, size, size);
-  const faceSize = Math.floor(size * 0.82 * FACE_SCALE);
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, size, size);
+  const faceSize = Math.floor(size * 0.55 * FACE_SCALE);
   const x = Math.floor((size - faceSize) / 2);
   const y = Math.floor((size - faceSize) / 2);
+  const cx = size / 2;
+  const eyeY = size * 0.42;
   ctx.imageSmoothingEnabled = false;
-  const eyeRatio = 0.55;
-  if (idleImg && idleImg.complete && idleImg.naturalWidth) {
+  if (useSimpleEyes || !idleImg || !idleImg.complete || !idleImg.naturalWidth) {
+    drawSimpleEyes(cx, eyeY, faceSize);
+  } else {
+    const eyeRatio = 0.55;
     const srcW = idleImg.naturalWidth, srcH = idleImg.naturalHeight;
     const srcEyeH = Math.floor(srcH * eyeRatio);
     const eyeH = Math.floor(faceSize * eyeRatio);
-    ctx.drawImage(idleImg, 0, 0, srcW, srcEyeH, x, y, faceSize, eyeH);
+    const off = document.createElement('canvas');
+    off.width = faceSize; off.height = eyeH;
+    const octx = off.getContext('2d');
+    octx.imageSmoothingEnabled = false;
+    octx.drawImage(idleImg, 0, 0, srcW, srcEyeH, 0, 0, faceSize, eyeH);
+    try {
+      const id = octx.getImageData(0, 0, faceSize, eyeH);
+      const d = id.data;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] < 20) continue;
+        const lum = (d[i] + d[i+1] + d[i+2]) / 3;
+        const v = lum < 140 ? 255 : 0;
+        d[i] = d[i+1] = d[i+2] = v;
+        d[i+3] = 255;
+      }
+      octx.putImageData(id, 0, 0);
+    } catch (_) {}
+    ctx.drawImage(off, x, y + Math.floor(faceSize * 0.08));
   }
   const frames = mouthImgs;
   if (frames.length) {
@@ -160,7 +206,10 @@ function drawFace(mouthLevel) {
     }
     const mouth = frames[idx];
     if (mouth && mouth.complete && mouth.naturalWidth) {
-      ctx.drawImage(mouth, x, y, faceSize, faceSize);
+      const mouthSize = faceSize;
+      const mx = Math.floor((size - mouthSize) / 2);
+      const my = Math.floor(size * 0.28);
+      ctx.drawImage(mouth, mx, my, mouthSize, mouthSize);
     }
   }
 }
