@@ -9,13 +9,13 @@
   @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;800&display=swap');
   :root { --purple: #7c3aed; --purple-deep: #5b21b6; --pink: #d946ef; --text: #1e1b2e; --muted: #6b5b8a; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Nunito', system-ui, sans-serif; color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px 16px; background: #ffffff; }
+  body { font-family: 'Nunito', system-ui, sans-serif; color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px 16px; background: #f5f5f7; }
   h1 { font-family: 'Press Start 2P', monospace; font-size: clamp(1rem, 3.5vw, 1.7rem); background: linear-gradient(135deg, var(--purple-deep), var(--purple), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 6px; }
   .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 22px; }
   .layout { display: flex; flex-wrap: wrap; gap: 22px; justify-content: center; max-width: 980px; width: 100%; }
   .panel { background: #ffffff; border: 1px solid rgba(124, 58, 237, 0.18); border-radius: 24px; padding: 18px; box-shadow: 0 8px 28px rgba(124, 58, 237, 0.12); }
-  .preview-panel { display: flex; flex-direction: column; align-items: center; gap: 14px; min-width: 280px; }
-  #stage { width: 280px; height: 280px; border-radius: 20px; overflow: hidden; border: 1px solid #222; background-color: #000000; }
+  .preview-panel { display: flex; flex-direction: column; align-items: center; gap: 14px; min-width: 320px; }
+  #stage { width: 320px; height: 320px; border-radius: 16px; overflow: hidden; border: none; background-color: #000000; }
   #faceCanvas { width: 100%; height: 100%; image-rendering: pixelated; }
   .controls-panel { flex: 1; min-width: 280px; max-width: 440px; display: flex; flex-direction: column; gap: 14px; }
   label.file-btn, button.action { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 13px 18px; border-radius: 14px; font-weight: 800; font-size: 0.95rem; cursor: pointer; border: none; font-family: inherit; }
@@ -42,9 +42,9 @@
   input[type="range"] { width: 100%; accent-color: var(--purple); }
   #status { font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
   .hint { font-size: 0.75rem; color: var(--muted); opacity: 0.85; }
-  .vis { width: 280px; height: 40px; border-radius: 10px; overflow: hidden; background: #0a0a0a; }
+  .vis { width: 320px; height: 40px; border-radius: 10px; overflow: hidden; background: #0a0a0a; }
   #visCanvas { width: 100%; height: 100%; }
-  #progressBar { width: 280px; height: 6px; background: #eee; border-radius: 4px; overflow: hidden; }
+  #progressBar { width: 320px; height: 6px; background: #eee; border-radius: 4px; overflow: hidden; }
   #progressFill { height: 100%; width: 0; background: linear-gradient(90deg, var(--purple), var(--pink)); transition: width 0.1s; }
   footer { margin-top: 24px; font-size: 0.72rem; color: var(--muted); opacity: 0.7; }
 </style>
@@ -54,15 +54,15 @@
   <p class="subtitle">Your custom mouths</p>
   <div class="layout">
     <div class="panel preview-panel">
-      <div id="stage"><canvas id="faceCanvas" width="256" height="256"></canvas></div>
-      <div class="vis"><canvas id="visCanvas" width="280" height="40"></canvas></div>
+      <div id="stage"><canvas id="faceCanvas" width="320" height="320"></canvas></div>
+      <div class="vis"><canvas id="visCanvas" width="320" height="40"></canvas></div>
       <div id="progressBar"><div id="progressFill"></div></div>
       <p id="status">Load audio!</p>
-      <p class="hint">Idle smile · mouth opens with volume · Bubbly eyes</p>
+      <p class="hint">Bigger face · black/white toggle · idle smile</p>
     </div>
     <div class="panel controls-panel">
       <div>
-        <div class="section-title">Eyes <span id="faceCount"></span></div>
+        <div class="section-title">Face color</div>
         <div class="face-grid" id="idleGrid" style="margin-top:8px;"></div>
       </div>
       <div>
@@ -95,7 +95,7 @@
   </div>
   <footer>guest.lol</footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="mouths-data.js?v=fix11"></script>
-<script src="app.js?v=fix11"></script>
+<script src="mouths-data.js?v=fix12"></script>
+<script src="app.js?v=fix12"></script>
 </body>
 </html>
