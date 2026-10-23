@@ -4,7 +4,8 @@ let defaultEyesImg=new Image();
 defaultEyesImg.onload=function(){if(typeof drawFace==="function")drawFace(0);};
 defaultEyesImg.src=DEFAULT_EYES_SRC;
 const FACE_SCALE=1.0;
-let mouthImgs=[],currentMouthSet="custom",smoothMouthIdx=0,useSimpleEyes=true;
+let mouthImgs=[],currentMouthSet="custom",smoothMouthIdx=0;
+let faceMode="dark";
 function loadMouthSet(key){
   const sets=(typeof MOUTH_SETS!=="undefined")?MOUTH_SETS:{};
   const set=sets[key]||Object.values(sets)[0]||{frames:[]};
@@ -35,7 +36,7 @@ const canvas=document.getElementById("faceCanvas");
 const ctx=canvas.getContext("2d");
 ctx.imageSmoothingEnabled=false;
 const visCanvas=document.getElementById("visCanvas");
-const visCtx=visCanvas.getContext("2d");
+const visCtx=visCanvas?visCanvas.getContext("2d"):null;
 const idleGrid=document.getElementById("idleGrid");
 const audioInput=document.getElementById("audioInput");
 const playBtn=document.getElementById("playBtn");
@@ -46,36 +47,78 @@ const statusEl=document.getElementById("status");
 const progressFill=document.getElementById("progressFill");
 const sensSlider=document.getElementById("sens");
 const smoothSlider=document.getElementById("smooth");
+const stageEl=document.getElementById("stage");
 let isPlaying=false,audioCtx,analyser,source,audioBuffer,currentLevel=0,animId;
 let mediaElement=null,mediaObjectUrl=null,useMediaElement=false;
+function setFaceMode(mode){
+  faceMode=mode==="light"?"light":"dark";
+  document.querySelectorAll(".face-mode-btn").forEach(b=>{
+    b.classList.toggle("active", b.dataset.mode===faceMode);
+    b.style.borderColor=b.dataset.mode===faceMode?"#7c3aed":"transparent";
+  });
+  if(stageEl){
+    stageEl.style.backgroundColor=faceMode==="dark"?"#000000":"#ffffff";
+    stageEl.style.borderColor=faceMode==="dark"?"#222":"#ddd";
+  }
+  if(!isPlaying) drawFace(0);
+}
 function buildGrid(){
   if(!idleGrid)return;
   idleGrid.innerHTML="";
-  const simple=document.createElement("div");
-  simple.className="face-thumb active";
-  simple.textContent="··";
-  simple.title="Bubbly eyes";
-  simple.style.cssText="display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;background:#111;border:2px solid #7c3aed";
-  simple.onclick=()=>{useSimpleEyes=true;if(!isPlaying)drawFace(0);};
-  idleGrid.appendChild(simple);
+  const row=document.createElement("div");
+  row.style.cssText="display:flex;gap:8px;width:100%;grid-column:1/-1;";
+  [["dark","Black face"],["light","White face"]].forEach(([mode,label])=>{
+    const btn=document.createElement("button");
+    btn.type="button";
+    btn.className="face-mode-btn"+(faceMode===mode?" active":"");
+    btn.dataset.mode=mode;
+    btn.textContent=label;
+    btn.style.cssText="flex:1;padding:10px;border-radius:12px;font-weight:800;font-size:0.85rem;cursor:pointer;border:2px solid "+(faceMode===mode?"#7c3aed":"transparent")+";background:"+(mode==="dark"?"#111":"#f3f0fa")+";color:"+(mode==="dark"?"#fff":"#1e1b2e");
+    btn.onclick=()=>setFaceMode(mode);
+    row.appendChild(btn);
+  });
+  idleGrid.appendChild(row);
+}
+function drawTinted(img, dx, dy, dw, dh){
+  if(faceMode==="dark"){
+    ctx.drawImage(img, dx, dy, dw, dh);
+    return;
+  }
+  const off=document.createElement("canvas");
+  off.width=img.naturalWidth||img.width;
+  off.height=img.naturalHeight||img.height;
+  const o=off.getContext("2d");
+  o.imageSmoothingEnabled=false;
+  o.drawImage(img,0,0);
+  try{
+    const id=o.getImageData(0,0,off.width,off.height);
+    const d=id.data;
+    for(let i=0;i<d.length;i+=4){
+      if(d[i+3]<20){d[i+3]=0;continue;}
+      d[i]=d[i+1]=d[i+2]=0;
+      d[i+3]=255;
+    }
+    o.putImageData(id,0,0);
+  }catch(_){}
+  ctx.drawImage(off, dx, dy, dw, dh);
 }
 function drawFace(mouthLevel){
   const size=canvas.width;
   ctx.clearRect(0,0,size,size);
-  ctx.fillStyle="#000000";
+  ctx.fillStyle=faceMode==="dark"?"#000000":"#ffffff";
   ctx.fillRect(0,0,size,size);
-  const faceSize=Math.floor(size*0.55*FACE_SCALE);
+  const faceSize=Math.floor(size*0.92*FACE_SCALE);
   const y=Math.floor((size-faceSize)/2);
   ctx.imageSmoothingEnabled=false;
   if(defaultEyesImg.complete&&defaultEyesImg.naturalWidth){
-    const eyeW=Math.floor(faceSize*0.72);
+    const eyeW=Math.floor(faceSize*0.85);
     const eyeH=Math.floor(eyeW*(defaultEyesImg.naturalHeight/defaultEyesImg.naturalWidth));
     const eyeX0=Math.floor((size-eyeW)/2);
-    const eyeY0=y+Math.floor(faceSize*0.05);
-    ctx.drawImage(defaultEyesImg,0,0,defaultEyesImg.naturalWidth,defaultEyesImg.naturalHeight,eyeX0,eyeY0,eyeW,eyeH);
+    const eyeY0=y+Math.floor(faceSize*0.08);
+    drawTinted(defaultEyesImg, eyeX0, eyeY0, eyeW, eyeH);
   } else {
-    const cx=size/2,eyeY=size*0.42,r=Math.max(3,faceSize*0.06);
-    ctx.fillStyle="#fff";
+    const cx=size/2, eyeY=size*0.38, r=Math.max(6, faceSize*0.09);
+    ctx.fillStyle=faceMode==="dark"?"#ffffff":"#000000";
     ctx.beginPath();ctx.arc(cx-faceSize*0.18,eyeY,r,0,Math.PI*2);ctx.fill();
     ctx.beginPath();ctx.arc(cx+faceSize*0.18,eyeY,r,0,Math.PI*2);ctx.fill();
   }
@@ -88,11 +131,11 @@ function drawFace(mouthLevel){
     const idx=Math.min(n-1,Math.max(0,Math.round(smoothMouthIdx)));
     const mImg=frames[idx];
     if(mImg&&mImg.complete&&mImg.naturalWidth){
-      const mw=Math.floor(faceSize*0.48);
+      const mw=Math.floor(faceSize*0.72);
       const mh=Math.floor(mw*(mImg.naturalHeight/mImg.naturalWidth));
       const mx=Math.floor((size-mw)/2);
-      const my=Math.floor(size*0.58);
-      ctx.drawImage(mImg,mx,my,mw,mh);
+      const my=Math.floor(size*0.52);
+      drawTinted(mImg, mx, my, mw, mh);
     }
   }
 }
@@ -150,7 +193,8 @@ audioInput.onchange=async(e)=>{
     if(source)source.connect(analyser);
     analyser.connect(audioCtx.destination);
     playBtn.disabled=false;statusEl.textContent="Ready - hit Play";
-    exportGifBtn.disabled=false;exportVidBtn.disabled=false;
+    if(exportGifBtn)exportGifBtn.disabled=false;
+    if(exportVidBtn)exportVidBtn.disabled=false;
   }catch(err){statusEl.textContent="Load failed: "+(err.message||err);console.error(err);}
 };
 if(sensSlider){const n=document.getElementById("sensNum");sensSlider.oninput=()=>{if(n)n.value=sensSlider.value;};if(n)n.oninput=()=>{sensSlider.value=n.value;};}
@@ -178,7 +222,7 @@ function stopPlay(){
   playBtn.disabled=!(audioBuffer||useMediaElement);
 }
 playBtn.onclick=startPlay;stopBtn.onclick=stopPlay;
-exportGifBtn.onclick=()=>{statusEl.textContent="GIF export - use Play for now";};
-exportVidBtn.onclick=()=>{statusEl.textContent="Video export - use Play for now";};
-buildMouthGrid();loadMouthSet(currentMouthSet);buildGrid();drawFace(0);
+if(exportGifBtn)exportGifBtn.onclick=()=>{statusEl.textContent="GIF export - use Play for now";};
+if(exportVidBtn)exportVidBtn.onclick=()=>{statusEl.textContent="Video export - use Play for now";};
+buildMouthGrid();loadMouthSet(currentMouthSet);buildGrid();setFaceMode("dark");drawFace(0);
 statusEl.textContent="Load audio!";
