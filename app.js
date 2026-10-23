@@ -134,7 +134,7 @@ function drawFace(mouthLevel){
       const mw=Math.floor(faceSize*0.72);
       const mh=Math.floor(mw*(mImg.naturalHeight/mImg.naturalWidth));
       const mx=Math.floor((size-mw)/2);
-      const my=Math.floor(size*0.52);
+      const my=Math.floor(size*0.46);
       drawTinted(mImg, mx, my, mw, mh);
     }
   }
