@@ -1,6 +1,6 @@
 const MOUTH_SETS = {
   "custom": {
-    name: "Bubbly",
+    name: "Smiley",
     frames: [
       window.MOUTH_FRAME_0,
       window.MOUTH_FRAME_1,
