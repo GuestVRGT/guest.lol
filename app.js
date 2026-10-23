@@ -1,1 +1,5 @@
-PLACEHOLDER
+window.FACE_FILES = []; // simple eyes only - no face PNGs required
+
+const DEFAULT_EYES_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAABMCAYAAAAr4jQ9AAABTElEQVR4nO2b2xKDIAxEodP//2X65AzekpALxLrnra0muwaQ0bSUh1OlB7bW2u7EWsXnRsb+aBLcfafBGps14CV0FGleUQUyYzJgrY5Hdd9dgQzAwGpgYDUwsJp3G7DuSD12tKwBz23zCNK86gp4GbPGERk4JvGuSnR8AAAAAAAAAAAAAAAAAMCXWsq+ZyHzo+0rnaf3A6vaaziOurbPly84spmg9PzvW8osVeB0kBVYbUKS/7FDaLcKUUtnxqa/Xq+67TISVdtl5htYz1Hnh/qxZ1YVpENnY2gSR5vQxD8Z4IZSlAku7p2uywpkmw+Unq8m4Ha1PIxaK3o7ByTiZrQeczrISRxpwkN8KcohRImZvRSLxrAmcW/Eej55nDTgzO2E+19QRoNaGM0zdCeONqGJrxbkOaQsF+bxbZcuIiJXGTaOR5ANr5vTq/gBw5q0TggqbF0AAAAASUVORK5CYII=";
+let defaultEyesImg = new Image();
+defaultEyesImg.src = DEFAULT_EYES_SRC;
