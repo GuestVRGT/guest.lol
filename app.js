@@ -9,9 +9,7 @@ function loadMouthSet(key) {
   mouthImgs = (set.frames || []).map(src => { const img = new Image(); img.src = src; return img; });
   const grid = document.getElementById('mouthGrid');
   if (grid) grid.querySelectorAll('.mouth-thumb').forEach(t => t.classList.toggle('active', t.dataset.key === key));
-  if (typeof isPlaying === 'undefined' || !isPlaying) {
-    if (typeof drawFace === 'function') drawFace(0);
-  }
+  if (typeof drawFace === 'function') drawFace(0);
 }
 
 function buildMouthGrid() {
@@ -60,8 +58,6 @@ const faceSearch = document.getElementById('faceSearch');
 let selectedFace = null;
 let idleImg = new Image();
 let isPlaying = false;
-loadMouthSet(currentMouthSet);
-buildMouthGrid();
 let isExporting = false;
 let audioCtx, analyser, source, audioBuffer;
 let currentLevel = 0;
@@ -371,4 +367,6 @@ exportVidBtn.onclick = async () => {
   source.start(0); animate();
 };
 
+loadMouthSet(currentMouthSet);
+buildMouthGrid();
 drawFace(0);
