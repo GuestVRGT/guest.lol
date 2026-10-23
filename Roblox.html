@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>guest.lol — Lipsync</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;800&display=swap');
+  :root { --purple: #7c3aed; --purple-deep: #5b21b6; --pink: #d946ef; --text: #1e1b2e; --muted: #6b5b8a; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Nunito', system-ui, sans-serif; color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px 16px; background: #f5f5f7; }
+  h1 { font-family: 'Press Start 2P', monospace; font-size: clamp(1rem, 3.5vw, 1.7rem); background: linear-gradient(135deg, var(--purple-deep), var(--purple), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 6px; }
+  .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 22px; }
+  .layout { display: flex; flex-wrap: wrap; gap: 22px; justify-content: center; max-width: 980px; width: 100%; }
+  .panel { background: #ffffff; border: 1px solid rgba(124, 58, 237, 0.18); border-radius: 24px; padding: 18px; box-shadow: 0 8px 28px rgba(124, 58, 237, 0.12); }
+  .preview-panel { display: flex; flex-direction: column; align-items: center; gap: 14px; min-width: 320px; }
+  #stage { width: 320px; height: 320px; border-radius: 16px; overflow: hidden; border: none; background-color: #000000; }
+  #faceCanvas { width: 100%; height: 100%; image-rendering: pixelated; }
+  .controls-panel { flex: 1; min-width: 280px; max-width: 440px; display: flex; flex-direction: column; gap: 14px; }
+  label.file-btn, button.action { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 13px 18px; border-radius: 14px; font-weight: 800; font-size: 0.95rem; cursor: pointer; border: none; font-family: inherit; }
+  label.file-btn { background: linear-gradient(135deg, #c084fc, #7c3aed); color: #fff; }
+  input[type="file"] { display: none; }
+  .btn-row, .export-row { display: flex; gap: 10px; }
+  #playBtn { background: linear-gradient(135deg, #f0abfc, #c084fc); color: #1e1b2e; flex: 1; }
+  #playBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+  #stopBtn { background: #f3f0fa; color: var(--text); flex: 1; border: 1px solid rgba(124,58,237,0.15); }
+  #exportGifBtn { background: linear-gradient(135deg, #fb923c, #ea580c); color: white; flex: 1; }
+  #exportVidBtn { background: linear-gradient(135deg, #60a5fa, #3b82f6); color: white; flex: 1; }
+  #exportGifBtn:disabled, #exportVidBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .section-title { font-weight: 800; font-size: 0.85rem; color: var(--purple-deep); margin-bottom: 4px; }
+  .face-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 8px; max-height: 120px; overflow-y: auto; padding: 8px; background: #f8f5ff; border-radius: 16px; border: 1px solid rgba(124,58,237,0.12); }
+  .mouth-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .mouth-thumb { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px; border-radius: 12px; border: 2px solid transparent; background: #f8f5ff; cursor: pointer; font-size: 0.7rem; font-weight: 600; color: var(--muted); }
+  .mouth-thumb.active { border-color: var(--purple); background: #f3e8ff; color: var(--purple-deep); }
+  .mouth-thumb img { width: 36px; height: 36px; image-rendering: pixelated; object-fit: contain; }
+  .slider-group { display: flex; flex-direction: column; gap: 4px; }
+  .slider-group label { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+  .num-input { width: 56px; padding: 4px 6px; border-radius: 8px; border: 1px solid rgba(124,58,237,0.2); font-size: 0.8rem; }
+  input[type="range"] { width: 100%; accent-color: var(--purple); }
+  #status { font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
+  .hint { font-size: 0.75rem; color: var(--muted); opacity: 0.85; }
+  .vis { width: 320px; height: 40px; border-radius: 10px; overflow: hidden; background: #0a0a0a; }
+  #visCanvas { width: 100%; height: 100%; }
+  #progressBar { width: 320px; height: 6px; background: #eee; border-radius: 4px; overflow: hidden; }
+  #progressFill { height: 100%; width: 0; background: linear-gradient(90deg, var(--purple), var(--pink)); transition: width 0.1s; }
+  footer { margin-top: 24px; font-size: 0.72rem; color: var(--muted); opacity: 0.7; }
+</style>
+</head>
+<body>
+  <h1>guest.lol</h1>
+  <p class="subtitle">Simple pixel smiley lipsync</p>
+  <div class="layout">
+    <div class="panel preview-panel">
+      <div id="stage"><canvas id="faceCanvas" width="320" height="320"></canvas></div>
+      <div class="vis"><canvas id="visCanvas" width="320" height="40"></canvas></div>
+      <div id="progressBar"><div id="progressFill"></div></div>
+      <p id="status">Load audio!</p>
+    </div>
+    <div class="panel controls-panel">
+      <label class="file-btn">Choose audio / video<input type="file" id="audioInput" accept="audio/*,video/*"></label>
+      <div class="btn-row">
+        <button id="playBtn" class="action" disabled>Play</button>
+        <button id="stopBtn" class="action">Stop</button>
+      </div>
+      <div class="export-row">
+        <button id="exportGifBtn" class="action" disabled>Export GIF</button>
+        <button id="exportVidBtn" class="action" disabled>Export Video</button>
+      </div>
+      <div class="section-title">Face mode</div>
+      <div id="idleGrid" class="face-grid"></div>
+      <div class="section-title">Mouth set</div>
+      <div id="mouthGrid" class="mouth-grid"></div>
+      <div class="slider-group">
+        <label><span>Sensitivity</span><input type="number" id="sensNum" min="0.1" max="10" step="0.01" value="1.5" class="num-input"></label>
+        <input type="range" id="sens" min="0.1" max="10" step="0.01" value="1.5">
+      </div>
+      <div class="slider-group">
+        <label><span>Smoothing</span><input type="number" id="smoothNum" min="0" max="0.95" step="0.01" value="0.2" class="num-input"></label>
+        <input type="range" id="smooth" min="0" max="0.95" step="0.01" value="0.2">
+      </div>
+      <div class="slider-group">
+        <label><span>GIF FPS</span><input type="number" id="fpsNum" min="1" max="30" step="1" value="12" class="num-input"></label>
+        <input type="range" id="gifFps" min="1" max="30" step="1" value="12">
+      </div>
+    </div>
+  </div>
+  <footer>guest.lol</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="eyes_data.js?v=fix20"></script>
+<script src="mouth_frame0.js?v=fix20"></script>
+<script src="mouth_frame1.js?v=fix20"></script>
+<script src="mouth_frame2.js?v=fix20"></script>
+<script src="mouth_frame3.js?v=fix20"></script>
+<script src="mouths-data.js?v=fix20"></script>
+<script src="app.js?v=fix20"></script>
+</body>
+</html>
