@@ -47,15 +47,9 @@
   #stage {
     width: 280px; height: 280px;
     border-radius: 20px; overflow: hidden;
-    border: 1px solid rgba(124, 58, 237, 0.2);
-    background-color: #f5f5f5;
-    background-image:
-      linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
-      linear-gradient(-45deg, #e0e0e0 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, #e0e0e0 75%),
-      linear-gradient(-45deg, transparent 75%, #e0e0e0 75%);
-    background-size: 16px 16px;
-    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    border: 1px solid #222;
+    background-color: #000000;
+    background-image: none;
   }
   #faceCanvas { width: 100%; height: 100%; image-rendering: pixelated; }
   .controls-panel { flex: 1; min-width: 280px; max-width: 440px; display: flex; flex-direction: column; gap: 14px; }
@@ -92,7 +86,7 @@
   }
   .mouth-thumb img {
     width: 40px; height: 40px; image-rendering: pixelated; object-fit: contain;
-    background: #eee; border-radius: 8px;
+    background: #111; border-radius: 8px;
   }
   .mouth-thumb.active { border-color: var(--purple); box-shadow: 0 0 10px rgba(124,58,237,0.3); }
   .slider-group label { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--muted); margin-bottom: 5px; }
@@ -116,14 +110,14 @@
 </head>
 <body>
   <h1>guest.lol</h1>
-  <p class="subtitle">Transparent · pick eyes + mouth style</p>
+  <p class="subtitle">pablobloxx style · black + white</p>
   <div class="layout">
     <div class="panel preview-panel">
       <div id="stage"><canvas id="faceCanvas" width="256" height="256"></canvas></div>
       <div class="vis"><canvas id="visCanvas"></canvas></div>
       <div id="progressBar"><div id="progressFill"></div></div>
       <p id="status">Pick eyes & load audio!</p>
-      <p class="hint">Transparent background · select mouth style below</p>
+      <p class="hint">Black bg · white dots · closed line when quiet · O when talking</p>
     </div>
     <div class="panel controls-panel">
       <div>
@@ -167,8 +161,8 @@
   </div>
   <footer>guest.lol</footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="face_list.js?v=fix3"></script>
-<script src="mouths-data.js?v=fix3"></script>
-<script src="app.js?v=fix3"></script>
+<script src="face_list.js?v=pablo1"></script>
+<script src="mouths-data.js?v=pablo1"></script>
+<script src="app.js?v=pablo1"></script>
 </body>
 </html>
