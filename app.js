@@ -104,19 +104,37 @@ let smoothMouthIdx = 0;
 function drawFace(mouthLevel) {
   const size = canvas.width;
   ctx.clearRect(0, 0, size, size);
-  ctx.fillStyle = '#f3f0fa';
+  ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, size, size);
   const faceSize = Math.floor(size * 0.82 * FACE_SCALE);
   const x = Math.floor((size - faceSize) / 2);
   const y = Math.floor((size - faceSize) / 2);
   ctx.imageSmoothingEnabled = false;
-  const eyeRatio = 0.52;
+  const eyeRatio = 0.55;
   if (idleImg && idleImg.complete && idleImg.naturalWidth) {
     const srcW = idleImg.naturalWidth;
     const srcH = idleImg.naturalHeight;
     const srcEyeH = Math.floor(srcH * eyeRatio);
     const eyeH = Math.floor(faceSize * eyeRatio);
-    ctx.drawImage(idleImg, 0, 0, srcW, srcEyeH, x, y, faceSize, eyeH);
+    const off = document.createElement('canvas');
+    off.width = faceSize;
+    off.height = eyeH;
+    const octx = off.getContext('2d');
+    octx.imageSmoothingEnabled = false;
+    octx.drawImage(idleImg, 0, 0, srcW, srcEyeH, 0, 0, faceSize, eyeH);
+    try {
+      const id = octx.getImageData(0, 0, faceSize, eyeH);
+      const d = id.data;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] < 20) continue;
+        const lum = (d[i] + d[i+1] + d[i+2]) / 3;
+        const v = lum < 140 ? 255 : 0;
+        d[i] = d[i+1] = d[i+2] = v;
+        d[i+3] = d[i+3] > 20 ? 255 : 0;
+      }
+      octx.putImageData(id, 0, 0);
+    } catch (_) {}
+    ctx.drawImage(off, x, y);
   }
   const frames = mouthImgs;
   if (frames.length) {
@@ -138,11 +156,6 @@ function drawFace(mouthLevel) {
       ctx.drawImage(mouth, x, y, faceSize, faceSize);
     }
   }
-  const grad = ctx.createRadialGradient(size/2, size/2, size*0.28, size/2, size/2, size*0.72);
-  grad.addColorStop(0, 'rgba(0,0,0,0)');
-  grad.addColorStop(1, 'rgba(0,0,0,0.18)');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, size, size);
 }
 function setExportingUI(on) {
   isExporting = on;
