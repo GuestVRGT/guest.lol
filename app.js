@@ -1,5 +1,5 @@
 window.FACE_FILES=[];
-const DEFAULT_EYES_SRC="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACcAAAAYCAYAAAB5j+RNAAAAcElEQVR42u2VUQ7AIAhDpfe/M35vCQtqMYTRT5XyABPGaBWUWBeqqo+HIsJK6vWGJ9g6Y4B9eSMKggGNzH8Op9VFxiPDSK38dcbacA33Kzjm/txa9K/8dcZ62tnVeLABmOC41bUdH3gM2N2M9m+l1gT6yjAsl91C8AAAAABJRU5ErkJggg==";
+const DEFAULT_EYES_SRC="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAAy0lEQVR42u3bMQ6AIBAEQDH+/8tYWdkqsMfMBzxwOUjE4wAAAAAAAAAAAAAAAAAAAAAAAADW0hKL7r3310Baa7vV8IUr/cWvWF9SEE5NcG9XlYGMWn2rd6GyHSBp4pNqLbcF/Dn51Va/MwACIAAIAAKAACAACAACgAAgAAgAAhDnz8/BiTd+dAAEgAIBSGq/SbWWuRI2atKf51S5HGIL2FyJ/wJmtdxV6gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYKIbLqc0My37ToYAAAAASUVORK5CYII=";
 let defaultEyesImg=new Image();
 defaultEyesImg.onload=function(){if(typeof drawFace==="function")drawFace(0);};
 defaultEyesImg.src=DEFAULT_EYES_SRC;
@@ -108,18 +108,19 @@ function drawFace(mouthLevel){
   ctx.fillStyle=faceMode==="dark"?"#000000":"#ffffff";
   ctx.fillRect(0,0,size,size);
   const faceSize=Math.floor(size*0.92*FACE_SCALE);
+  const y=Math.floor((size-faceSize)/2);
   ctx.imageSmoothingEnabled=false;
   if(defaultEyesImg.complete&&defaultEyesImg.naturalWidth){
-    const eyeW=Math.floor(faceSize*0.50);
+    const eyeW=Math.floor(faceSize*0.85);
     const eyeH=Math.floor(eyeW*(defaultEyesImg.naturalHeight/defaultEyesImg.naturalWidth));
     const eyeX0=Math.floor((size-eyeW)/2);
-    const eyeY0=Math.floor(size*0.22);
+    const eyeY0=y+Math.floor(faceSize*0.08);
     drawTinted(defaultEyesImg, eyeX0, eyeY0, eyeW, eyeH);
   } else {
-    const cx=size/2, eyeY=size*0.30, r=Math.max(6, faceSize*0.08);
+    const cx=size/2, eyeY=size*0.38, r=Math.max(6, faceSize*0.09);
     ctx.fillStyle=faceMode==="dark"?"#ffffff":"#000000";
-    ctx.beginPath();ctx.arc(cx-faceSize*0.14,eyeY,r,0,Math.PI*2);ctx.fill();
-    ctx.beginPath();ctx.arc(cx+faceSize*0.14,eyeY,r,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(cx-faceSize*0.18,eyeY,r,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(cx+faceSize*0.18,eyeY,r,0,Math.PI*2);ctx.fill();
   }
   const frames=mouthImgs;
   if(frames.length){
@@ -130,10 +131,10 @@ function drawFace(mouthLevel){
     const idx=Math.min(n-1,Math.max(0,Math.round(smoothMouthIdx)));
     const mImg=frames[idx];
     if(mImg&&mImg.complete&&mImg.naturalWidth){
-      const mw=Math.floor(faceSize*0.55);
+      const mw=Math.floor(faceSize*0.72);
       const mh=Math.floor(mw*(mImg.naturalHeight/mImg.naturalWidth));
       const mx=Math.floor((size-mw)/2);
-      const my=Math.floor(size*0.52);
+      const my=Math.floor(size*0.46);
       drawTinted(mImg, mx, my, mw, mh);
     }
   }
