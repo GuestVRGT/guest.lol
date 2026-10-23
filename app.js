@@ -189,28 +189,38 @@ function drawFace(mouthLevel) {
     } catch (_) {}
     ctx.drawImage(off, x, y + Math.floor(faceSize * 0.08));
   }
-  const frames = mouthImgs;
-  if (frames.length) {
-    let idx = 0;
-    const talking = (isPlaying || isExporting) && mouthLevel > 0.03;
-    if (talking && frames.length > 1) {
-      const openCount = frames.length - 1;
-      const curved = Math.pow(Math.min(1, mouthLevel), 0.65);
-      const openIdx = Math.max(0, Math.min(openCount - 1, Math.round(curved * (openCount - 1))));
-      const target = 1 + openIdx;
-      smoothMouthIdx += (target - smoothMouthIdx) * 0.85;
-      idx = Math.max(1, Math.min(frames.length - 1, Math.round(smoothMouthIdx)));
-    } else {
-      smoothMouthIdx *= 0.25;
-      idx = 0;
-    }
-    const mouth = frames[idx];
-    if (mouth && mouth.complete && mouth.naturalWidth) {
-      const mouthSize = faceSize;
-      const mx = Math.floor((size - mouthSize) / 2);
-      const my = Math.floor(size * 0.28);
-      ctx.drawImage(mouth, mx, my, mouthSize, mouthSize);
-    }
+  // Smooth continuous mouth: closed line → scaling white O based on volume
+  const open = Math.max(0, Math.min(1, mouthLevel));
+  // ease so quiet speech still moves a little
+  const t = Math.pow(open, 0.7);
+  const mx = cx;
+  const my = size * 0.58;
+  ctx.strokeStyle = '#ffffff';
+  ctx.fillStyle = '#ffffff';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  if (t < 0.04) {
+    // closed mouth — horizontal line (like -_-)
+    const halfW = faceSize * 0.12;
+    const thick = Math.max(2, faceSize * 0.028);
+    ctx.beginPath();
+    ctx.lineWidth = thick;
+    ctx.moveTo(mx - halfW, my);
+    ctx.lineTo(mx + halfW, my);
+    ctx.stroke();
+  } else {
+    // open O — scales smoothly with volume
+    const minR = faceSize * 0.04;
+    const maxRx = faceSize * 0.16;
+    const maxRy = faceSize * 0.18;
+    const rx = minR + (maxRx - minR) * t;
+    const ry = minR + (maxRy - minR) * t;
+    const lineW = Math.max(2, faceSize * 0.032);
+    ctx.beginPath();
+    ctx.lineWidth = lineW;
+    ctx.ellipse(mx, my, rx, ry, 0, 0, Math.PI * 2);
+    ctx.stroke();
   }
 }
 
@@ -329,9 +339,16 @@ function animate() {
   for (let i = start; i < end; i++) { const v = dataArr[i]; sum += v; if (v > peak) peak = v; }
   const avg = sum / (end - start) / 255;
   const pk = peak / 255;
-  let level = Math.min(1, (avg * 0.55 + pk * 0.45) * parseFloat(sensSlider.value));
+  let level = Math.min(1, (avg * 0.5 + pk * 0.5) * parseFloat(sensSlider.value));
+  // smooth toward target — lower smooth = faster follow
   const smooth = parseFloat(smoothSlider.value);
-  currentLevel = currentLevel * smooth + level * (1 - smooth);
+  const follow = 1 - Math.min(0.95, Math.max(0, smooth));
+  // slightly faster open, slower close for natural mouth feel
+  if (level > currentLevel) {
+    currentLevel += (level - currentLevel) * Math.min(1, follow * 1.4);
+  } else {
+    currentLevel += (level - currentLevel) * Math.min(1, follow * 0.9);
+  }
   drawFace(currentLevel);
   if (!isExporting) {
     const dpr = devicePixelRatio || 1;
