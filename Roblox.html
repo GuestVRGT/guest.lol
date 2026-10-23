@@ -29,7 +29,7 @@
   #exportVidBtn { background: linear-gradient(135deg, #60a5fa, #3b82f6); color: white; flex: 1; }
   #exportGifBtn:disabled, #exportVidBtn:disabled { opacity: 0.35; cursor: not-allowed; }
   .section-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 8px; }
-  .face-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 8px; max-height: 180px; overflow-y: auto; padding: 8px; background: #f8f5ff; border-radius: 16px; border: 1px solid rgba(124,58,237,0.12); }
+  .face-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 8px; max-height: 120px; overflow-y: auto; padding: 8px; background: #f8f5ff; border-radius: 16px; border: 1px solid rgba(124,58,237,0.12); }
   .face-thumb { width: 52px; height: 52px; border-radius: 12px; cursor: pointer; border: 2px solid transparent; background: #fff; image-rendering: pixelated; object-fit: contain; }
   .face-thumb.active { border-color: var(--purple); box-shadow: 0 0 12px rgba(124,58,237,0.35); }
   .mouth-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
@@ -45,7 +45,6 @@
   .hint { font-size: 0.78rem; color: var(--muted); text-align: center; }
   #progressBar { width: 100%; height: 6px; background: #e8e2f5; border-radius: 4px; overflow: hidden; display: none; }
   #progressFill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--purple-deep), var(--purple), var(--pink)); }
-  .search-box { width: 100%; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(124,58,237,0.2); background: #f8f5ff; color: var(--text); font-family: inherit; }
   footer { margin-top: 24px; font-size: 0.72rem; color: var(--muted); opacity: 0.7; }
 </style>
 </head>
@@ -63,7 +62,6 @@
     <div class="panel controls-panel">
       <div>
         <div class="section-title">Eyes <span id="faceCount"></span></div>
-        <input type="text" class="search-box" id="faceSearch" placeholder="Search eyes..." style="display:none">
         <div class="face-grid" id="idleGrid" style="margin-top:8px;"></div>
       </div>
       <div>
@@ -96,8 +94,7 @@
   </div>
   <footer>guest.lol</footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="face_list.js?v=fix1"></script>
-<script src="mouths-data.js?v=fix1"></script>
-<script src="app.js?v=fix1"></script>
+<script src="mouths-data.js?v=fix3"></script>
+<script src="app.js?v=fix3"></script>
 </body>
 </html>

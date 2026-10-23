@@ -1,3 +1,4 @@
+window.FACE_FILES = []; // simple eyes only — no face PNGs required
 const FACE_SCALE = 1.0;
 let mouthImgs = [];
 let currentMouthSet = 'custom';
@@ -91,23 +92,24 @@ function loadFace(filename) {
 function buildGrid(filter = '') {
   if (!idleGrid) return;
   idleGrid.innerHTML = '';
-  const q = filter.trim().toLowerCase();
-  const list = (typeof FACE_FILES !== 'undefined' ? FACE_FILES : []).filter(f => !q || displayName(f).toLowerCase().includes(q));
+  const q = (filter || '').trim().toLowerCase();
+  const list = (typeof FACE_FILES !== 'undefined' && FACE_FILES.length ? FACE_FILES : []).filter(f => !q || displayName(f).toLowerCase().includes(q));
   const countEl = document.getElementById('faceCount');
-  if (countEl) countEl.textContent = '(' + list.length + ')';
+  if (countEl) countEl.textContent = list.length ? '(' + list.length + ')' : '';
   const simple = document.createElement('div');
   simple.className = 'face-thumb' + (useSimpleEyes ? ' active' : '');
   simple.textContent = '··';
+  simple.title = 'Simple dots';
   simple.style.cssText = 'display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;background:#111;border:2px solid ' + (useSimpleEyes ? '#7c3aed' : 'transparent');
   simple.onclick = () => {
     useSimpleEyes = true;
     selectedFace = null;
     idleImg = new Image();
     if (!isPlaying) drawFace(0);
-    buildGrid(faceSearch ? faceSearch.value : '');
+    buildGrid();
   };
   idleGrid.appendChild(simple);
-  list.slice(0, 80).forEach(name => {
+  list.forEach(name => {
     const img = document.createElement('img');
     img.className = 'face-thumb' + (!useSimpleEyes && name === selectedFace ? ' active' : '');
     img.src = faceUrl(name);
@@ -116,7 +118,7 @@ function buildGrid(filter = '') {
       useSimpleEyes = false;
       selectedFace = name;
       loadFace(name).then(im => { idleImg = im || new Image(); if (!isPlaying) drawFace(0); });
-      buildGrid(faceSearch ? faceSearch.value : '');
+      buildGrid();
     };
     idleGrid.appendChild(img);
   });
@@ -190,16 +192,6 @@ function drawFace(mouthLevel) {
       ctx.drawImage(mouth, mx, my, mouthSize, mouthSize);
     }
   }
-}
-
-function setExportingUI(on) {
-  isExporting = on;
-  const hasMedia = !!(audioBuffer || useMediaElement);
-  playBtn.disabled = on || !hasMedia;
-  exportGifBtn.disabled = on || !audioBuffer;
-  exportVidBtn.disabled = on || !audioBuffer;
-  progressBar.style.display = on ? 'block' : 'none';
-  if (!on) progressFill.style.width = '0%';
 }
 
 const sensNum = document.getElementById('sensNum');
@@ -314,18 +306,18 @@ function stopPlay() {
   cancelAnimationFrame(animId);
   try { if (source) source.stop(); } catch(_){}
   try { if (mediaElement) mediaElement.pause(); } catch(_){}
-  if (!isExporting) { statusEl.textContent = (audioBuffer || useMediaElement) ? 'Stopped' : 'Pick eyes & load audio!'; currentLevel = 0; drawFace(0); }
+  if (!isExporting) { statusEl.textContent = (audioBuffer || useMediaElement) ? 'Stopped' : 'Load audio!'; currentLevel = 0; drawFace(0); }
   playBtn.disabled = !(audioBuffer || useMediaElement);
 }
 
 playBtn.onclick = startPlay;
 stopBtn.onclick = stopPlay;
 
-exportGifBtn.onclick = () => { statusEl.textContent = 'GIF export coming — use Play for now'; };
-exportVidBtn.onclick = () => { statusEl.textContent = 'Video export coming — use Play for now'; };
+exportGifBtn.onclick = () => { statusEl.textContent = 'GIF export — use Play for now'; };
+exportVidBtn.onclick = () => { statusEl.textContent = 'Video export — use Play for now'; };
 
 buildMouthGrid();
 loadMouthSet(currentMouthSet);
 buildGrid();
 drawFace(0);
-statusEl.textContent = 'Pick eyes (or dots) & load audio';
+statusEl.textContent = 'Load audio!';
