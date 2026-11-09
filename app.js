@@ -1,11 +1,11 @@
 const FACE_SCALE = 1.3;
 
 const canvas = document.getElementById('faceCanvas');
-if (canvas.width < 512) { canvas.width = 512; canvas.height = 512; }
+if (canvas && canvas.width < 512) { canvas.width = 512; canvas.height = 512; }
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 const visCanvas = document.getElementById('visCanvas');
-const visCtx = visCanvas.getContext('2d');
+const visCtx = visCanvas ? visCanvas.getContext('2d') : null;
 const idleGrid = document.getElementById('idleGrid');
 const audioInput = document.getElementById('audioInput');
 const playBtn = document.getElementById('playBtn');
@@ -16,13 +16,10 @@ const progressBar = document.getElementById('progressBar');
 const progressFill = document.getElementById('progressFill');
 const sensSlider = document.getElementById('sens');
 const smoothSlider = document.getElementById('smooth');
-const fpsSlider = null;
 
 let selectedFace = 'Default';
 let idleImg = new Image();
 let talkingImgs = {};
-let boltBaseImg = new Image();
-let boltMouthImgs = [];
 let isPlaying = false;
 let isExporting = false;
 let audioCtx, analyser, source, audioBuffer;
@@ -34,51 +31,47 @@ let useMediaElement = false;
 let mediaElement = null;
 let mediaObjectUrl = null;
 
-if (!window.talkingByFace) window.talkingByFace = {};
-if (!window.idleData) window.idleData = {};
-if (!window.boltData) window.boltData = { base: '', mouths: [] };
+function srcOf(v) {
+  if (!v) return '';
+  if (typeof v === 'string' && (v.startsWith('faces/') || v.startsWith('http') || v.startsWith('data:'))) return v;
+  if (typeof v === 'string') return 'data:image/png;base64,' + v;
+  return '';
+}
 
-Object.keys(window.talkingByFace).forEach(name => {
+Object.keys(window.talkingByFace || {}).forEach(name => {
   const set = window.talkingByFace[name];
   if (set === 'BOLT_LAYERED') return;
   if (!Array.isArray(set)) return;
-  talkingImgs[name] = set.map(b64 => {
+  talkingImgs[name] = set.map(v => {
     const img = new Image();
-    img.src = 'data:image/png;base64,' + b64;
+    img.src = srcOf(v);
     return img;
   });
 });
-if (window.boltData && window.boltData.base) {
-  boltBaseImg.src = 'data:image/png;base64,' + window.boltData.base;
-  (window.boltData.mouths || []).forEach(b64 => {
-    const img = new Image();
-    img.src = 'data:image/png;base64,' + b64;
-    boltMouthImgs.push(img);
-  });
-}
 
-Object.keys(window.idleData).forEach(name => {
+Object.keys(window.idleData || {}).forEach(name => {
   const img = document.createElement('img');
   img.className = 'face-thumb' + (name === selectedFace ? ' active' : '');
-  img.src = 'data:image/png;base64,' + window.idleData[name];
+  img.src = srcOf(window.idleData[name]);
   img.title = name;
   img.onclick = () => {
     if (isExporting) return;
     document.querySelectorAll('.face-thumb').forEach(t => t.classList.remove('active'));
     img.classList.add('active');
     selectedFace = name;
-    idleImg.src = 'data:image/png;base64,' + window.idleData[name];
+    idleImg.src = srcOf(window.idleData[name]);
     if (!isPlaying) drawFace(0);
   };
-  idleGrid.appendChild(img);
+  if (idleGrid) idleGrid.appendChild(img);
 });
 
-if (window.idleData['Default']) {
-  idleImg.src = 'data:image/png;base64,' + window.idleData['Default'];
+if (window.idleData && window.idleData['Default']) {
+  idleImg.src = srcOf(window.idleData['Default']);
   idleImg.onload = () => drawFace(0);
 }
 
 function drawFace(mouthLevel) {
+  if (!canvas) return;
   const size = canvas.width;
   ctx.clearRect(0, 0, size, size);
   ctx.fillStyle = '#050508';
@@ -89,20 +82,14 @@ function drawFace(mouthLevel) {
   ctx.imageSmoothingEnabled = false;
 
   if (isPlaying || isExporting) {
-    if (selectedFace === 'Bolt / Lightning') {
-      if (boltBaseImg.complete) ctx.drawImage(boltBaseImg, x, y, faceSize, faceSize);
-      const mIdx = Math.max(0, Math.min(9, Math.round(mouthLevel * 9)));
-      const mouth = boltMouthImgs[mIdx];
-      if (mouth && mouth.complete) ctx.drawImage(mouth, x, y, faceSize, faceSize);
-    } else {
-      const set = talkingImgs[selectedFace];
-      if (set && set.length) {
-        const mIdx = Math.max(0, Math.min(set.length - 1, Math.round(mouthLevel * (set.length - 1))));
-        const frame = set[mIdx];
-        if (frame && frame.complete) ctx.drawImage(frame, x, y, faceSize, faceSize);
-      } else if (idleImg.complete) {
-        ctx.drawImage(idleImg, x, y, faceSize, faceSize);
-      }
+    const set = talkingImgs[selectedFace];
+    if (set && set.length) {
+      const mIdx = Math.max(0, Math.min(set.length - 1, Math.round(mouthLevel * (set.length - 1))));
+      const frame = set[mIdx];
+      if (frame && frame.complete && frame.naturalWidth) ctx.drawImage(frame, x, y, faceSize, faceSize);
+      else if (idleImg.complete && idleImg.naturalWidth) ctx.drawImage(idleImg, x, y, faceSize, faceSize);
+    } else if (idleImg.complete && idleImg.naturalWidth) {
+      ctx.drawImage(idleImg, x, y, faceSize, faceSize);
     }
   } else if (idleImg.complete && idleImg.naturalWidth) {
     ctx.drawImage(idleImg, x, y, faceSize, faceSize);
@@ -112,13 +99,13 @@ function drawFace(mouthLevel) {
 function setExportingUI(on) {
   isExporting = on;
   const hasMedia = !!(audioBuffer || useMediaElement);
-  playBtn.disabled = on || !hasMedia;
+  if (playBtn) playBtn.disabled = on || !hasMedia;
   if (exportVidBtn) exportVidBtn.disabled = on || !audioBuffer;
   if (progressBar) progressBar.style.display = on ? 'block' : 'none';
   if (!on && progressFill) progressFill.style.width = '0%';
 }
 
-audioInput.onchange = async (e) => {
+if (audioInput) audioInput.onchange = async (e) => {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
   statusEl.textContent = 'Loading…';
@@ -156,7 +143,7 @@ audioInput.onchange = async (e) => {
   }
 };
 
-playBtn.onclick = async () => {
+if (playBtn) playBtn.onclick = async () => {
   if (!audioBuffer && !useMediaElement) return;
   if (audioCtx.state === 'suspended') await audioCtx.resume();
   isPlaying = true;
@@ -203,7 +190,7 @@ playBtn.onclick = async () => {
   animate();
 };
 
-stopBtn.onclick = () => {
+if (stopBtn) stopBtn.onclick = () => {
   isPlaying = false;
   playBtn.disabled = false;
   if (animId) cancelAnimationFrame(animId);
@@ -225,8 +212,6 @@ if (smoothSlider) {
     const n = document.getElementById('smoothNum'); if (n) n.value = smoothSlider.value;
     if (analyser) analyser.smoothingTimeConstant = parseFloat(smoothSlider.value) || 0.4;
   };
-  const smoothNum = document.getElementById('smoothNum');
-  if (smoothNum) smoothNum.onchange = () => { smoothSlider.value = smoothNum.value; };
 }
 
 function pickRecorderMime() {
@@ -273,7 +258,7 @@ async function convertWebmToMp4(webmBlob) {
   return new Blob([out.buffer], { type: 'video/mp4' });
 }
 
-exportVidBtn.onclick = async () => {
+if (exportVidBtn) exportVidBtn.onclick = async () => {
   if (isExporting) return;
   try {
     if (!audioBuffer) { statusEl.textContent = 'Load audio first.'; return; }
@@ -353,4 +338,4 @@ exportVidBtn.onclick = async () => {
 };
 
 drawFace(0);
-statusEl.textContent = 'Pick a face & load audio!';
+if (statusEl) statusEl.textContent = 'Pick a face & load audio!';

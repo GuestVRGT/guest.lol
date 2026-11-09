@@ -1,13 +1,20 @@
-(async function() {
-  const n = 6;
-  const parts = [];
-  for (let i = 0; i < n; i++) {
-    const t = await fetch('./core.p' + i + '.txt?v=gt5').then(r => {
-      if (!r.ok) throw new Error('missing core.p' + i);
-      return r.text();
-    });
-    parts.push(t.trim());
-  }
-  const code = atob(parts.join(''));
-  (0, eval)(code);
-})();
+// Gorilla Tag face assets (PNG paths — works without huge embedded base64)
+window.idleData = {
+  "Default": "faces/D.png",
+  "Smile": "faces/-_-.png",
+  "Open": "faces/-o (2).png",
+  "Bubbly": "faces/Bubbly Reviewer - Face.png"
+};
+window.talkingByFace = window.talkingByFace || {};
+// Mouth frames: reuse open/closed faces as simple lipsync set until full packs upload
+window.talkingByFace["Default"] = [
+  "faces/D.png",
+  "faces/-_-.png",
+  "faces/-o (2).png",
+  "faces/-o (2).png"
+];
+window.talkingByFace["Smile"] = window.talkingByFace["Default"];
+window.talkingByFace["Open"] = window.talkingByFace["Default"];
+window.talkingByFace["Bubbly"] = window.talkingByFace["Default"];
+window.talkingByFace["Bolt / Lightning"] = "BOLT_LAYERED";
+window.boltData = window.boltData || { base: "", mouths: [] };
