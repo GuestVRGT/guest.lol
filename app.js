@@ -7,6 +7,9 @@ if(typeof window.DEFAULT_EYES_SRC !== "undefined") defaultEyesImg.src = window.D
 const FACE_SCALE = 1.0;
 let mouthImgs = [], currentMouthSet = "custom", smoothMouthIdx = 0;
 let faceMode = "dark";
+let isExporting = false;
+let recordedChunks = [];
+let mediaRecorder = null;
 
 function loadMouthSet(key){
   const sets = (typeof MOUTH_SETS !== "undefined") ? MOUTH_SETS : {};
@@ -46,18 +49,20 @@ function buildMouthGrid(){
 }
 
 const canvas = document.getElementById("faceCanvas");
-const ctx = canvas.getContext("2d");
+const ctx = canvas.getContext("2d", { alpha: false });
 ctx.imageSmoothingEnabled = false;
+if (canvas.width < 512) { canvas.width = 512; canvas.height = 512; }
+
 const visCanvas = document.getElementById("visCanvas");
 const visCtx = visCanvas ? visCanvas.getContext("2d") : null;
 const idleGrid = document.getElementById("idleGrid");
 const audioInput = document.getElementById("audioInput");
 const playBtn = document.getElementById("playBtn");
 const stopBtn = document.getElementById("stopBtn");
-const exportGifBtn = document.getElementById("exportGifBtn");
 const exportVidBtn = document.getElementById("exportVidBtn");
 const statusEl = document.getElementById("status");
 const progressFill = document.getElementById("progressFill");
+const progressBar = document.getElementById("progressBar");
 const sensSlider = document.getElementById("sens");
 const smoothSlider = document.getElementById("smooth");
 const stageEl = document.getElementById("stage");
@@ -125,19 +130,15 @@ function drawFace(mouthLevel){
   ctx.fillStyle = faceMode === "dark" ? "#000000" : "#ffffff";
   ctx.fillRect(0,0,size,size);
   ctx.imageSmoothingEnabled = false;
-
-  // 1:1 proportions matching the reference smiley (large features, centered)
   const contentW = Math.floor(size * 0.72);
   const eyeY0 = Math.floor(size * 0.22);
   const mouthY = Math.floor(size * 0.52);
-
   if(defaultEyesImg.complete && defaultEyesImg.naturalWidth){
     const eyeW = contentW;
     const eyeH = Math.floor(eyeW * (defaultEyesImg.naturalHeight / defaultEyesImg.naturalWidth));
     const eyeX0 = Math.floor((size - eyeW) / 2);
     drawTinted(defaultEyesImg, eyeX0, eyeY0, eyeW, eyeH);
   }
-
   const frames = mouthImgs;
   if(frames.length){
     const n = frames.length;
@@ -183,10 +184,19 @@ function animate(){
       visCtx.fillRect(i*barW, visCanvas.height - h, barW-1, h);
     }
   }
-  if(progressFill && mediaElement && mediaElement.duration){
+  if(progressFill && mediaElement && mediaElement.duration && !isExporting){
     progressFill.style.width = ((mediaElement.currentTime / mediaElement.duration)*100) + "%";
   }
   animId = requestAnimationFrame(animate);
+}
+
+function setExportingUI(on) {
+  isExporting = on;
+  const hasMedia = !!(audioBuffer || useMediaElement);
+  playBtn.disabled = on || !hasMedia;
+  if (exportVidBtn) exportVidBtn.disabled = on || !audioBuffer;
+  if (progressBar) progressBar.style.display = on ? "block" : "none";
+  if (!on && progressFill) progressFill.style.width = "0%";
 }
 
 audioInput.onchange = async (e) => {
@@ -194,11 +204,19 @@ audioInput.onchange = async (e) => {
   if(!file) return;
   statusEl.textContent = "Loading...";
   playBtn.disabled = true;
+  if (exportVidBtn) exportVidBtn.disabled = true;
   try {
     if(mediaObjectUrl) URL.revokeObjectURL(mediaObjectUrl);
     mediaObjectUrl = URL.createObjectURL(file);
     if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if(audioCtx.state === "suspended") await audioCtx.resume();
+    const ab = await file.arrayBuffer();
+    try {
+      audioBuffer = await audioCtx.decodeAudioData(ab.slice(0));
+    } catch (decodeErr) {
+      audioBuffer = null;
+      console.warn("decodeAudioData failed", decodeErr);
+    }
     useMediaElement = /video|mp4|webm|mov/i.test(file.type) || /\.(mp4|webm|mov)$/i.test(file.name);
     if(useMediaElement){
       mediaElement = document.createElement(file.type.startsWith("video") ? "video" : "audio");
@@ -207,20 +225,19 @@ audioInput.onchange = async (e) => {
       await new Promise((res,rej) => { mediaElement.onloadedmetadata = res; mediaElement.onerror = rej; });
       source = audioCtx.createMediaElementSource(mediaElement);
     } else {
-      const ab = await file.arrayBuffer();
-      audioBuffer = await audioCtx.decodeAudioData(ab);
       useMediaElement = false;
       mediaElement = null;
     }
     analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 256;
+    analyser.fftSize = 512;
     analyser.smoothingTimeConstant = parseFloat(smoothSlider && smoothSlider.value) || 0.2;
     if(source) source.connect(analyser);
     analyser.connect(audioCtx.destination);
     playBtn.disabled = false;
-    statusEl.textContent = "Ready - hit Play";
-    if(exportGifBtn) exportGifBtn.disabled = false;
-    if(exportVidBtn) exportVidBtn.disabled = false;
+    if (exportVidBtn) exportVidBtn.disabled = !audioBuffer;
+    statusEl.textContent = audioBuffer
+      ? "Ready — Play or Export MP4"
+      : "Ready to Play (export needs a normal audio track)";
   } catch(err) {
     statusEl.textContent = "Load failed: " + (err.message || err);
     console.error(err);
@@ -228,7 +245,7 @@ audioInput.onchange = async (e) => {
 };
 
 playBtn.onclick = async () => {
-  if(!analyser) return;
+  if(!analyser && !audioBuffer) return;
   if(audioCtx.state === "suspended") await audioCtx.resume();
   isPlaying = true;
   playBtn.disabled = true;
@@ -240,7 +257,11 @@ playBtn.onclick = async () => {
     if(source) try{source.disconnect();}catch(_){}
     source = audioCtx.createBufferSource();
     source.buffer = audioBuffer;
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 512;
+    analyser.smoothingTimeConstant = parseFloat(smoothSlider && smoothSlider.value) || 0.2;
     source.connect(analyser);
+    analyser.connect(audioCtx.destination);
     source.start(0);
     source.onended = () => { isPlaying = false; playBtn.disabled = false; drawFace(0); };
   }
@@ -253,8 +274,10 @@ stopBtn.onclick = () => {
   if(animId) cancelAnimationFrame(animId);
   if(mediaElement){ mediaElement.pause(); mediaElement.currentTime = 0; }
   if(source && source.stop) try{source.stop();}catch(_){}
+  if(mediaRecorder && mediaRecorder.state === "recording") try{mediaRecorder.stop();}catch(_){}
   drawFace(0);
   if(progressFill) progressFill.style.width = "0%";
+  if (isExporting) setExportingUI(false);
 };
 
 if(sensSlider){
@@ -271,8 +294,189 @@ if(smoothSlider){
   if(smoothNum) smoothNum.onchange = () => { smoothSlider.value = smoothNum.value; if(analyser) analyser.smoothingTimeConstant = parseFloat(smoothNum.value)||0.2; };
 }
 
-if(exportGifBtn) exportGifBtn.onclick = () => { statusEl.textContent = "GIF export - use Play for now"; };
-if(exportVidBtn) exportVidBtn.onclick = () => { statusEl.textContent = "Video export - use Play for now"; };
+function pickRecorderMime() {
+  const types = [
+    "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+    "video/mp4;codecs=avc1.4D401E,mp4a.40.2",
+    "video/mp4",
+    "video/webm;codecs=vp9,opus",
+    "video/webm;codecs=vp8,opus",
+    "video/webm"
+  ];
+  for (const t of types) {
+    try { if (window.MediaRecorder && MediaRecorder.isTypeSupported(t)) return t; } catch (_) {}
+  }
+  return "";
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2500);
+}
+
+async function convertWebmToMp4(webmBlob) {
+  statusEl.textContent = "Converting to MP4 (first run may take a bit)…";
+  if (!window.FFmpegWASM) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js";
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("Could not load MP4 converter"));
+      document.head.appendChild(s);
+    });
+  }
+  if (!window.FFmpegUtil) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/util.js";
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("Could not load converter util"));
+      document.head.appendChild(s);
+    });
+  }
+  const { FFmpeg } = window.FFmpegWASM;
+  const { toBlobURL } = window.FFmpegUtil;
+  const ffmpeg = new FFmpeg();
+  ffmpeg.on("progress", ({ progress }) => {
+    if (progressFill) progressFill.style.width = Math.min(99, 70 + progress * 28) + "%";
+    statusEl.textContent = "Encoding MP4… " + Math.round((progress || 0) * 100) + "%";
+  });
+  const base = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd";
+  await ffmpeg.load({
+    coreURL: await toBlobURL(base + "/ffmpeg-core.js", "text/javascript"),
+    wasmURL: await toBlobURL(base + "/ffmpeg-core.wasm", "application/wasm")
+  });
+  const data = new Uint8Array(await webmBlob.arrayBuffer());
+  await ffmpeg.writeFile("in.webm", data);
+  await ffmpeg.exec([
+    "-i", "in.webm",
+    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "18",
+    "-pix_fmt", "yuv420p",
+    "-c:a", "aac", "-b:a", "192k",
+    "-movflags", "+faststart",
+    "out.mp4"
+  ]);
+  const out = await ffmpeg.readFile("out.mp4");
+  return new Blob([out.buffer], { type: "video/mp4" });
+}
+
+if (exportVidBtn) exportVidBtn.onclick = async () => {
+  if (isExporting) return;
+  try {
+    if (!audioBuffer) {
+      statusEl.textContent = "Load a file with a decodable audio track first.";
+      return;
+    }
+    if (!window.MediaRecorder) {
+      statusEl.textContent = "Recording is not supported in this browser.";
+      return;
+    }
+    setExportingUI(true);
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") await audioCtx.resume();
+
+    statusEl.textContent = "Recording high-quality video…";
+    const dest = audioCtx.createMediaStreamDestination();
+    if (source) try { source.disconnect(); } catch (_) {}
+    source = audioCtx.createBufferSource();
+    source.buffer = audioBuffer;
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 512;
+    analyser.smoothingTimeConstant = parseFloat(smoothSlider && smoothSlider.value) || 0.25;
+    source.connect(analyser);
+    analyser.connect(dest);
+    const silent = audioCtx.createGain();
+    silent.gain.value = 0.0001;
+    analyser.connect(silent);
+    silent.connect(audioCtx.destination);
+
+    const fps = 30;
+    const canvasStream = canvas.captureStream(fps);
+    const combined = new MediaStream([
+      ...canvasStream.getVideoTracks(),
+      ...dest.stream.getAudioTracks()
+    ]);
+
+    const mime = pickRecorderMime();
+    const nativeMp4 = mime.includes("mp4");
+    recordedChunks = [];
+    try {
+      mediaRecorder = new MediaRecorder(combined, {
+        mimeType: mime || undefined,
+        videoBitsPerSecond: 12000000,
+        audioBitsPerSecond: 192000
+      });
+    } catch (_) {
+      mediaRecorder = new MediaRecorder(combined);
+    }
+
+    mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size) recordedChunks.push(e.data); };
+    const stopped = new Promise((resolve) => {
+      mediaRecorder.onstop = () => resolve();
+      mediaRecorder.onerror = () => resolve();
+    });
+
+    mediaRecorder.start(100);
+    isPlaying = true;
+    const startT = audioCtx.currentTime;
+    const dur = audioBuffer.duration;
+
+    const tick = () => {
+      if (!isExporting) return;
+      currentLevel = getLevel();
+      drawFace(currentLevel);
+      if (progressFill) progressFill.style.width = Math.min(100, ((audioCtx.currentTime - startT) / dur) * 100) + "%";
+      if (isPlaying) requestAnimationFrame(tick);
+    };
+
+    source.onended = () => {
+      isPlaying = false;
+      setTimeout(() => {
+        if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
+      }, 220);
+    };
+    source.start(0);
+    tick();
+    await stopped;
+
+    let blob = new Blob(recordedChunks, { type: mime || "video/webm" });
+    let filename = "guest-lol-lipsync.mp4";
+
+    if (!nativeMp4) {
+      try {
+        blob = await convertWebmToMp4(blob);
+      } catch (convErr) {
+        console.warn(convErr);
+        filename = "guest-lol-lipsync.webm";
+        statusEl.textContent = "MP4 convert failed — saved WebM instead. " + (convErr.message || "");
+        downloadBlob(blob, filename);
+        setExportingUI(false);
+        currentLevel = 0;
+        drawFace(0);
+        isPlaying = false;
+        return;
+      }
+    }
+
+    downloadBlob(blob, filename);
+    statusEl.textContent = "MP4 downloaded! (" + (blob.size / 1024 / 1024).toFixed(1) + " MB)";
+    setExportingUI(false);
+    currentLevel = 0;
+    drawFace(0);
+    isPlaying = false;
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = "Export failed: " + (err.message || err);
+    setExportingUI(false);
+    isPlaying = false;
+  }
+};
 
 buildMouthGrid();
 loadMouthSet(currentMouthSet);
